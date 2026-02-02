@@ -1,0 +1,2 @@
+# Exclude ABWD waiver PDFs from indexing; still accessible when explicitly referenced
+1_data/10_raw/100_usda/1000_abawd_waivers/**/*.pdf
