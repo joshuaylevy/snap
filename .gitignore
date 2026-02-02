@@ -1,0 +1,4 @@
+# Data files (uncomment specific lines to track them)
+*.csv
+*.dta
+*.xlsx
