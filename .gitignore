@@ -1,12 +1,14 @@
+# MISCELLANEOUS AND ORGANIZATION
 # Data files (uncomment specific lines to track them)
 *.csv
 *.dta
 *.xlsx
 
+renv/**
 
 .env
 
 # DATA
 # SNAP ABAWD WAIVERS
-1_data/10_raw/100_usda/1000_abawd_waivers/**/*.pdf
+1_data/10_raw/100_usda/1000_abawd_waivers/FY**/**.pdf
 1_data/10_raw/100_usda/1001_abawd_openai_responses/**/*.json
