@@ -1,2 +1,10 @@
-# Exclude ABWD waiver PDFs from indexing; still accessible when explicitly referenced
+# GENERAL
+
+# Secrets, environment variables, etc.
+.env
+renv.lock
+
+# 1_DATA
+## Exclude ABWD waiver PDFs from indexing; still accessible when explicitly referenced
 1_data/10_raw/100_usda/1000_abawd_waivers/**/*.pdf
+## Exclude OpenAI ABAD interpretation of ABAWD waivers from indexing

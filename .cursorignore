@@ -1,0 +1,10 @@
+# GENERAL
+
+# Secrets, environment variables, etc.
+.env
+
+
+# DATA
+
+# ABAWD WAIVERS: OpenAI Response JSONs 
+1_data/10_raw/100_usda/1001_abawd_openai_responses/**.json
