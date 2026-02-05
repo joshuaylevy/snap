@@ -8,5 +8,5 @@
 
 # DATA
 # SNAP ABAWD WAIVERS
-1_data/10_raw/100_usda/1000_abawd_waivers/**.pdf
-1_data/10_raw/100_usda/1001_abawd_openai_responses/**.json
+1_data/10_raw/100_usda/1000_abawd_waivers/**/*.pdf
+1_data/10_raw/100_usda/1001_abawd_openai_responses/**/*.json
