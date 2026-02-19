@@ -17,7 +17,7 @@ def load_tracker() -> pd.DataFrame:
 
 def tracker_cols_check(df: pd.DataFrame) -> bool:
     existing_cols = df.columns.tolist()
-    required_cols = ["ai_parsed", "ai_parse_resposne_path", "ai_parse_timestamp"]
+    required_cols = ["ai_parsed", "ai_parsed_response_path", "ai_parse_timestamp"]
     if all(col in existing_cols for col in required_cols):
         return True
     else:
@@ -48,7 +48,7 @@ interpret_df = tracker_df[tracker_df["ai_parsed"] == True]
 
 out_df = pd.DataFrame()
 
-for idx, row in interpret_df.iterrows():
+for idx, row in interpret_df.head(10).iterrows():
     ai_response_path = row["ai_parsed_response_path"]
     with open(ai_response_path, "r") as f:
         ai_response_dict = json.load(f)
@@ -56,10 +56,22 @@ for idx, row in interpret_df.iterrows():
         ai_response_dict.get("output")[1].get("content")[0].get("text")
     )
 
-    # print(intelligent_response)
+    
+    if type(intelligent_response.get('waiver_serial_number')) == list:
+        intelligent_response['waiver_serial_number'] = "||".join(intelligent_response['waiver_serial_number'])
+        
     # print(type(intelligent_response))
     temp_df = pd.DataFrame.from_dict(intelligent_response)
 
+
     out_df = pd.concat([out_df, temp_df])
 
-out_df.to_csv(OUTPUT_DIR / "10010_abawd_waiver_interpretations.csv", index=False)
+# Expand geographic_areas: each dict key becomes a column, each value the cell entry
+# Handle list-of-dicts (take first) or single dict per row
+geo_series = out_df["geographic_areas"].apply(
+    lambda x: x[0] if isinstance(x, list) and len(x) else (x if isinstance(x, dict) else {})
+)
+geo_expanded = geo_series.apply(pd.Series)
+out_df = pd.concat([out_df.drop(columns=["geographic_areas"]), geo_expanded], axis=1)
+
+

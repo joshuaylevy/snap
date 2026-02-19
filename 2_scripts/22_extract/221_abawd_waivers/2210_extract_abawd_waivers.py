@@ -75,7 +75,7 @@ def load_tracker() -> pd.DataFrame:
 
 def tracker_cols_check(df: pd.DataFrame) -> bool:
     existing_cols = df.columns.tolist()
-    required_cols = ["ai_parsed", "ai_parsed_response_path", "ai_parse_timestamp", ]
+    required_cols = ["ai_parsed", "ai_parsed_response_path", "ai_parse_timestamp"]
     if all(col in existing_cols for col in required_cols):
         return True
     else:
@@ -110,11 +110,11 @@ if not tracker_cols_check(tracker_df):
 # Count how many rows in "ai_parsed" are not null/false (progress already made)
 initial_done = len(tracker_df[tracker_df["ai_parsed"] == True])
 
-iter_df = tracker_df[tracker_df["abawd_response_path"].notna()].sample(10)
+iter_df = tracker_df[tracker_df["abawd_response_path"].notna()]
 pbar = tqdm(
     iter_df.iterrows(),
     total=len(iter_df),
-    initial=initial_done,
+    # initial=initial_done,
     desc="OpenAI parse progress",
 )
 for idx, row in pbar:
@@ -135,10 +135,11 @@ for idx, row in pbar:
     if ai_response_json.exists():
         pbar.set_description("Skipping (already parsed): {pdf}".format(pdf=abawd_response_path))
         tracker_df.loc[idx, "ai_parsed"] = True
-        tracker_df.loc[idx, "ai_parsed_response_path"] = ai_response_json
+        # pandas may store this column as the "string" dtype; store paths as plain strings
+        tracker_df.loc[idx, "ai_parsed_response_path"] = str(ai_response_json)
         tracker_df.loc[idx, "ai_parse_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         tracker_df.to_csv(WAIVERS_DIR / "10000_pdf_tracker.csv", index=False)
-        time.sleep(10)
+        time.sleep(0.1)
         continue
 
     with open(abawd_response_path, "rb") as f:
@@ -170,7 +171,8 @@ for idx, row in pbar:
         f.write(response.model_dump_json())
 
     tracker_df.loc[idx, "ai_parsed"] = True
-    tracker_df.loc[idx, "ai_parsed_response_path"] = ai_response_json
+    # pandas may store this column as the "string" dtype; store paths as plain strings
+    tracker_df.loc[idx, "ai_parsed_response_path"] = str(ai_response_json)
     tracker_df.loc[idx, "ai_parse_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     tracker_df.to_csv(WAIVERS_DIR / "10000_pdf_tracker.csv", index=False)
 

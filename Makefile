@@ -41,7 +41,7 @@ $(100_RAW_USDA)/1000_abawd_waivers/10000_pdf_tracker.csv:
 	@echo "Generating PDF tracker sheet"
 	Rscript --quiet $(211_ABAWD_WAIVERS)/make_abawd_waiver_db.R
 	@echo "Generated PDF tracker sheet"
-	@echo =========================================================================="
+	@echo ========================================================================="
 
 # Parse OpenAI Responses of ABAWD Waivers
 $(100_RAW_USDA)/1001_abawd_openai_responses/10010_abawd_waiver_interpretations.csv: \
