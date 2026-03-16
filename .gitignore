@@ -3,6 +3,7 @@
 *.csv
 *.dta
 *.xlsx
+.DS_Store
 
 renv/**
 

@@ -38,6 +38,46 @@ def resolve_ai_response_path(fy: int, state_code: str, abawd_response_path: str)
     return (ai_response_folder, ai_response_json)
 
 
+def flatten_for_dataframe(d: dict) -> dict:
+    """Convert nested dicts/lists to JSON strings so pd.DataFrame.from_dict works."""
+    out = {}
+    for k, v in d.items():
+        if isinstance(v, dict):
+            out[k] = json.dumps(v)
+        elif isinstance(v, list) and v and isinstance(v[0], dict):
+            # Keep lists of dicts as-is (geographic_areas); handled later
+            out[k] = v
+        else:
+            out[k] = v
+    return out
+
+
+def intelligent_response_to_df(intelligent_response: dict) -> pd.DataFrame:
+    """Convert intelligent response to dataframe."""
+    
+    if type(intelligent_response.get('waiver_serial_number')) == list:
+        intelligent_response['waiver_serial_number'] = "||".join(intelligent_response['waiver_serial_number'])
+    if type(intelligent_response.get('waiver_end_date')) == list:
+        intelligent_response['waiver_end_date'] = "||".join(intelligent_response['waiver_end_date'])
+
+    try:
+        temp_df = pd.DataFrame.from_dict(intelligent_response)
+    except ValueError as e:
+        print(f"Error parsing JSON for {ai_response_path}")
+        print(e)
+        print("Trying with the flatten")
+        temp_df = pd.DataFrame.from_dict(flatten_for_dataframe(intelligent_response))
+
+    return temp_df
+
+def assign_waiver_metadata(temp_df: pd.DataFrame, interpret_df_row: pd.Series) -> pd.DataFrame:
+
+    temp_df['state_name'] = interpret_df_row['state_name']
+    temp_df['state_code'] = interpret_df_row['state_code']
+    temp_df['fy'] = interpret_df_row['fy']
+    temp_df['abawd_response_path'] = interpret_df_row['abawd_response_path']
+    return temp_df
+
 tracker_df = load_tracker()
 
 if not tracker_cols_check(tracker_df):
@@ -48,23 +88,28 @@ interpret_df = tracker_df[tracker_df["ai_parsed"] == True]
 
 out_df = pd.DataFrame()
 
-for idx, row in interpret_df.head(10).iterrows():
+for idx, row in interpret_df.iterrows():
     ai_response_path = row["ai_parsed_response_path"]
+    print(ai_response_path)
     with open(ai_response_path, "r") as f:
         ai_response_dict = json.load(f)
     intelligent_response = json.loads(
         ai_response_dict.get("output")[1].get("content")[0].get("text")
     )
 
-    
-    if type(intelligent_response.get('waiver_serial_number')) == list:
-        intelligent_response['waiver_serial_number'] = "||".join(intelligent_response['waiver_serial_number'])
-        
-    # print(type(intelligent_response))
-    temp_df = pd.DataFrame.from_dict(intelligent_response)
+    if type(intelligent_response) == list:
+        for item_dict in intelligent_response:
+            temp_df = intelligent_response_to_df(item_dict)
+            temp_df = assign_waiver_metadata(temp_df, row)
+            out_df = pd.concat([out_df, temp_df], ignore_index=True)
+    else:
+        temp_df = intelligent_response_to_df(intelligent_response)
+        temp_df = assign_waiver_metadata(temp_df, row)
+        out_df = pd.concat([out_df, temp_df], ignore_index=True)
 
 
-    out_df = pd.concat([out_df, temp_df])
+
+
 
 # Expand geographic_areas: each dict key becomes a column, each value the cell entry
 # Handle list-of-dicts (take first) or single dict per row
@@ -75,3 +120,4 @@ geo_expanded = geo_series.apply(pd.Series)
 out_df = pd.concat([out_df.drop(columns=["geographic_areas"]), geo_expanded], axis=1)
 
 
+out_df.to_csv(OUTPUT_DIR / "10010_abawd_waiver_interpretations.csv", index=False)
