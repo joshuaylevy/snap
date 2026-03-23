@@ -24,6 +24,7 @@ from typing import List, Dict, Any, Optional
 
 
 RAW_DATA_DIR = pl.Path("1_data/10_raw/100_usda")
+SCRIPT_DIR = pl.Path("2_scripts/22_extract/221_abawd_waivers")
 OUTPUT_DIR = RAW_DATA_DIR / "1001_abawd_openai_responses"
 WAIVERS_DIR = RAW_DATA_DIR / "1000_abawd_waivers"
 RESPONSES_API_URL = "https://api.openai.com/v1/responses"
@@ -32,39 +33,11 @@ if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY not found in .env file. Script will not run without it. Exiting in 10 seconds.")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-
-
-EXTRACTION_PROMPT = """You are extracting structured data from USDA FNS ABAWD (Able-Bodied Adults Without Dependents) waiver response letters. Each letter is a response from USDA to a state agency about SNAP work-requirement waivers.
-
-Extract and return a JSON object with this exact structure:
-
-1. geographic_areas: List of objects, each with:
-   - name: The geographic area name (e.g., "Anchorage Borough", "Los Angeles County")
-   - status: Either "approved" or "denied"
-   - area_type: The type of geographic unit for this area (e.g., "borough", "census area", "county", "parish", "statewide", "Labor Market Area")
-   - exemption_type: If the geographic_area has status "approved", then this section should explain why. Options include "LSA" (if the area has been deemed a "Labor Surplus Area" by the Department of Labor); "percent_20" (if the area had an unemployment rate 20percent higher than the national average over the previous 24 months); "percent_10" (if the area had an unemployment rate above 10 percent for 12 consecutive months); "other" (if some other reason is provided in the document); or "none" (if the document does not provide any information about the exemption type.
-   - exemption_none_reason: If the geographic_area has a status of "approved" and an exemption_type of "other", an short explanation (<30 words) why you think the area is approved/what reasoning was provided.
-
-2. waiver_serial_number: The serial number associated with the waiver. These are usually a sequence of numbers.
-
-3. waiver_start_date: Start date of the waiver period (YYYY-MM-DD if determinable, else null)
-
-4. waiver_end_date: End date of the waiver period (YYYY-MM-DD if determinable, else null)
-
-5. author_name: Full name of the USDA/FNS official who signed or wrote the letter
-
-6. author_title: Their title or role if given (e.g., "Director, Certification Policy Branch")
-
-7. non_conforming_document: If you think that the document is not a valid waiver response letter, or does not contain sufficient information to be parsed, set this to True. Otherwise, set it to False. 
-
-8. non_conforming_reason: If you set non_conforming_document to True, provide a brief explanation (<50 words) for why you think this document is not a valid waiver response letter or does not contain sufficient information to be parsed. One way that a document might be "non-conforming" is that it does not have a section titled "Waiver Response" with approximately 20 sections that follow it. Note that the relevant sections for many of the above questions include but are not limited to: 1. Waiver serial number; 2. Type of request; 8: Description of proposed alternative procedures; 9. Action and reason for approval or denial; 13. Expiration date etc. Another reason why a document might be non-conforming is that the document is a modification to an existing waiver, and so is only partially complete (may not have all of the above fields). Please succinctly explain why you think the document is non-conforming.
-
-If information is not found, use null. For geographic_areas, use an empty list [] if none found.
-Return ONLY valid JSON, no markdown code fences or extra text."""
-
-EXTRACTION_INSTRUCTION = """You are an expert policy analysis that is particularly good at extracting information from government documents. Your job is to extract the requested information according to the provided format."""
-
-
+# Load prompts from .txt files next to this script
+with open(SCRIPT_DIR / "2210a_extraction_instruction.txt", "r", encoding="utf-8") as f:
+    EXTRACTION_INSTRUCTION = f.read().strip()
+with open(SCRIPT_DIR / "2210b_extraction_prompt.txt", "r", encoding="utf-8") as f:
+    EXTRACTION_PROMPT = f.read().strip()
 
 
 def load_tracker() -> pd.DataFrame:

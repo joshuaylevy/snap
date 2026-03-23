@@ -1,0 +1,166 @@
+You are extracting structured data from USDA FNS ABAWD waiver documents.
+
+Return exactly one JSON object with two levels:
+1) request_level (document-level metadata and all FNS form fields that apply to the whole request)
+2) groups (area-level records when the request covers one or more geographic bundles)
+
+Use null for missing values. Use [] for empty lists. Return ONLY valid JSON, with no markdown or extra text.
+
+Required top-level shape:
+{
+  "request_level": { ... },
+  "groups": [ ... ]
+}
+
+------------------------
+REQUEST_LEVEL
+------------------------
+
+`request_level` must contain the following keys.
+
+A) Document classification / quality control
+1. document_type:
+   - "full_application"
+   - "fns_response_only"
+   - "other_nonstandard"
+2. non_conforming_document: boolean
+3. non_conforming_reason: brief text (< 50 words) if non_conforming_document=true, else null
+
+B) Canonical FNS Waiver Response fields (aligned to field names, not numeric positions)
+4. waiver_serial_number:
+   - this is usually a numeric-like identifier shown near the top and in field 1 of Waiver Response
+   - use string when one number
+   - use array of strings when multiple numbers appear in the same request
+5. type_of_request:
+   - corresponds to "Type of Request"
+   - preserve wording like "Initial", "Extension", "Modification", or combinations such as "Extension & Modification"
+6. primary_regulation_citation:
+   - corresponds to "Primary regulation citation"
+   - usually looks like "7 CFR 273.24"; keep exact citation text when present
+7. state:
+   - corresponds to "State"
+   - state/jurisdiction name exactly as shown
+8. fns_region:
+   - corresponds to "Region"
+   - FNS region name (for example, "Northeast", "Mid-Atlantic", "Southeast", "Midwest", "Mountain Plains", "Southwest", and "Western")
+9. alt_procedures_desc:
+   - corresponds to "Description of proposed alternative procedures"
+   - This is often a long string and may contain tables or lists.
+   - If the extracted content includes tables, lists, or other formatting, preserve the original formatting by encoding that content as a markdown string.
+   - Escape the markdown as needed so it is valid and safe within the JSON (for example, preserve line breaks and special characters as required).
+   - The resulting field value should be a markdown-formatted string, properly escaped so it is valid inside the JSON object.
+   - If no content is present, set to null.
+10. action_reason_approval_denial:
+   - corresponds to "Action and reason for approval or denial"
+   - capture whether FNS approved/denied and why; keep near-verbatim when possible
+11. reg_leg_action_basis:
+   - corresponds to "Regulatory or legislative basis for action"
+   - legal/regulatory basis cited by FNS (citation-based authority text)
+12. conditions_and_reasons:
+   - corresponds to "Conditions and reasons"
+   - includes values like "None" or any explicit conditions attached to approval/denial
+13. info_required_for_extension:
+   - corresponds to "Information required for extension"
+   - include evidence/data requirements for future extensions
+14. expiration_date:
+   - corresponds to "Expiration date"
+   - interpret text to provide a YYYY-MM-DD if determinable, else null
+15. limits_on_regional_office_approvals:
+   - corresponds to "Limitation, if any, on regional office approval of like requests"
+   - textual limitations on regional office approval of like requests
+16. quality_control_procedures:
+   - corresponds to "Quality control procedures"
+   - text
+17. date_national_office_action:
+   - corresponds to "Date of national office action"
+   - output YYYY-MM-DD if determinable, else null
+18. date_state_request:
+   - corresponds to "Date of State agency's request"
+   - output YYYY-MM-DD if determinable, else null
+19. date_ro_transmittal_request:
+   - corresponds to "Date of regional office transmittal of request"
+   - output YYYY-MM-DD if determinable, else null
+20. date_ro_transmittal_response:
+   - may appear as "Date of regional office transmittal of response to State agency" or equivalent language
+   - output YYYY-MM-DD if determinable, else null
+21. implementation_date_actual:
+   - may appear as "implementation date (notify FNS if actual date differs)" or "Actual implementation date"
+   - output YYYY-MM-DD if determinable, else null
+
+C) Additional non-form but useful metadata
+22. state_official_name: full name of state submitting official, if present
+23. fns_official_name: full name of FNS signatory/author, if present
+24. fns_official_title: title of FNS signatory/author, if present
+25. response_date: letter/date line date of FNS response (YYYY-MM-DD), if present
+26. number_of_groups: integer count of extracted groups
+
+------------------------
+GROUPS
+------------------------
+
+A group is one geographic bundle evaluated together under a common rationale/action. Use:
+"groups": [group1, group2, ...]
+
+Each group object must be formatted as a JSON and must contain:
+
+1. geographic_units: list of objects
+   - name: geographic unit name
+   - area_type: unit type if stated (county, parish, borough, census area, LMA, independent city, planning region, etc.), else null
+
+2. group_action: "approved" | "denied" | null
+   - infer from Action and reason for approval or denial, if feasible
+
+3. group_action_reason_citation: terse string with the primary statute, regulation, or other authority cited as the reason for approval or denial for this group (typically from FNS form field 8). If multiple are cited, output the most salient or first. Use only the citation unless additional clarification is essential. Null if not explicit.
+
+4. criteria_summary_text: brief text describing the criterion/rationale for this group
+   - example: "UER 20 percent above national average for Jan 2008-Dec 2009"
+
+5. criterion_code_normalized:
+   - "percent_10"
+   - "percent_20"
+   - "LSA"
+   - "trigger"
+   - "federal_waiver"
+   - "other"
+   - null
+
+6. criterion_other_explanation: required only if criterion_code_normalized="other", else null
+
+7. national_unemployment_rate_cited:
+   - object:
+     {
+       "national_unemployment_rate_cited": numeric or null,
+       "national_unemployment_rate_cited": string or null,
+       "vintage_or_date_of_data_cited" : "YYYY-MM" or null 
+     }
+   - null when not applicable
+
+8. local_unemployment_time_window:
+   - object:
+     {
+       "local_unemployment_rate_cited": numeric, else null,
+       "local_unemployment_data_source_cited" : string or null,
+       "window_type": "24_month_moving_average" | "12_consecutive_months" | "other",
+       "start_date": "YYYY-MM" or null,
+       "end_date": "YYYY-MM" or null,
+       "description": string or null,
+       "vintage_or_date_of_data_cited" "YYYY-MM" or null 
+     }
+   - null when not applicable
+
+9. waiver_effective_date: YYYY-MM-DD if determinable, else null
+10. waiver_expiry_date: YYYY-MM-DD if determinable, else null
+11. waiver_duration_text: duration text if explicitly stated, else null
+12. applied_waiver_start_date: YYYY-MM-DD if explicitly requested by state and different/independently stated, else null
+13. applied_waiver_end_date: YYYY-MM-DD if explicitly requested by state and different/independently stated, else null
+14. applied_waiver_duration_text: text if explicitly requested by state and different/independently stated, else null
+
+------------------------
+EXTRACTION RULES
+------------------------
+
+1. Prioritize faithful extraction of canonical FNS field text first, then normalized/derived fields. If data exists both in the FNS field and in the state agency's application the data/text may not be contradictory even if different. For example, the application may contain more detail than the FNS response. 
+2. If a value is ambiguous, preserve source wording in text fields and use null for uncertain normalized fields.
+3. If no valid waiver content exists, set non_conforming_document=true, provide non_conforming_reason, and set groups=[].
+4. If document_type is fns_response_only and state-submission fields are absent, keep them null.
+5. For all missing/unavailable values, use null (not empty string).
