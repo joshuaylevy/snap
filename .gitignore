@@ -1,3 +1,6 @@
+# AUTOMATION AND CURSOR
+.cursor/**
+
 # MISCELLANEOUS AND ORGANIZATION
 # Data files (uncomment specific lines to track them)
 *.csv
@@ -13,3 +16,9 @@ renv/**
 # SNAP ABAWD WAIVERS
 1_data/10_raw/100_usda/1000_abawd_waivers/FY**/**.pdf
 1_data/10_raw/100_usda/1001_abawd_openai_responses/**/*.json
+# Archives of prior OpenAI response folders (zip from 2210_extract_abawd_waivers.py)
+1_data/10_raw/100_usda/archives/*.zip
+
+# SCRIPTS
+# Helper scripts and cache
+2_scripts/22_extract/221_abawd_waivers/__pycache__/

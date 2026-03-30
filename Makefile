@@ -1,4 +1,4 @@
-.PHONY: conda_activate_snap_env
+.PHONY: conda_activate_snap_env openai_abawd_waivers_subset
 SHELL := /bin/bash
 CONDA_ACTIVATE := source $(shell conda info --base)/etc/profile.d/conda.sh; conda activate snap
 
@@ -22,7 +22,7 @@ full_project:
 	@echo "--------------- DONE -----------------"
 
 openai_abawd_waivers: \
-	$(100_RAW_USDA)/1000_abawd_waivers/10000_pdf_tracker.csv \
+	$(100_RAW_USDA)/1000_abawd_waivers/10001_abawd_waiver_pdf_document_inventory.csv \
 	$(100_RAW_USDA)/1001_abawd_openai_responses/10010_abawd_waiver_interpretations.csv
 	
 	@echo "------------- MAKING ALL -------------"
@@ -31,21 +31,21 @@ openai_abawd_waivers: \
 
 
 
-# Create a PDF tracker sheet for ABAWD Waivers
-$(100_RAW_USDA)/1000_abawd_waivers/10000_pdf_tracker.csv:
-	@echo "======================= MAKING A PDF TRACKER SHEET ======================="
+# Document inventory (10001): one row per PDF path + document_id for extraction joins
+$(100_RAW_USDA)/1000_abawd_waivers/10001_abawd_waiver_pdf_document_inventory.csv:
+	@echo "======================= MAKING ABAWD PDF DOCUMENT INVENTORY ======================="
 	@echo "Assumes that all relevant ABAWD waivers have been downloaded/scraped"
 	@echo "These can be scraped by using  download_abawd_waivers.R"
 	@echo "-------------------------------------------------------------------------"
 
-	@echo "Generating PDF tracker sheet"
+	@echo "Generating document inventory CSV"
 	Rscript --quiet $(211_ABAWD_WAIVERS)/make_abawd_waiver_db.R
-	@echo "Generated PDF tracker sheet"
+	@echo "Generated document inventory"
 	@echo ========================================================================="
 
 # Parse OpenAI Responses of ABAWD Waivers
 $(100_RAW_USDA)/1001_abawd_openai_responses/10010_abawd_waiver_interpretations.csv: \
-	$(100_RAW_USDA)/1000_abawd_waivers/10000_pdf_tracker.csv
+	$(100_RAW_USDA)/1000_abawd_waivers/10001_abawd_waiver_pdf_document_inventory.csv
 	@echo "================== OPEN AI ABAWD WAIVER INTERPRETATIONS =================="
 	@echo "Takes downloaded waivers and parses them using GPT via OpenAI Responses API"
 	@echo "API responses are stored locally as JSONs to be further processed and"
@@ -57,3 +57,8 @@ $(100_RAW_USDA)/1001_abawd_openai_responses/10010_abawd_waiver_interpretations.c
 	@echo "Extracted PDF contents saved as JSONs and organized into csvs"
 	$(CONDA_ACTIVATE) && python $(221_EXTRACT_ABAWD_WAIVERS)/2211_interpret_abawd_waiver_json.py
 	@echo "=========================================================================="
+
+# Subset of fiscal years only, e.g.: make openai_abawd_waivers_subset FYS="2019 2020"
+openai_abawd_waivers_subset:
+	$(CONDA_ACTIVATE) && python $(221_EXTRACT_ABAWD_WAIVERS)/2210_extract_abawd_waivers.py --fys $(FYS)
+	$(CONDA_ACTIVATE) && python $(221_EXTRACT_ABAWD_WAIVERS)/2211_interpret_abawd_waiver_json.py
