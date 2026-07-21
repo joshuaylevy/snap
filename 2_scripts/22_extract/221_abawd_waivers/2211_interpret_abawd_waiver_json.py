@@ -219,10 +219,13 @@ def interpret_from_results_and_inventory(run_id: str) -> list[dict]:
             continue
 
         output = ai_response_dict.get("output") or []
-        if len(output) < 2:
+        if len(output) < 1:
             print(f"  Skip: output has {len(output)} element(s)")
             continue
-        content = output[1].get("content") or []
+        # Responses JSON shape can vary; our saved artifacts sometimes store the
+        # content at output[0] (single element) rather than output[1].
+        output_elem = output[1] if len(output) > 1 else output[0]
+        content = output_elem.get("content") or []
         if not content:
             print(f"  Skip: no content")
             continue

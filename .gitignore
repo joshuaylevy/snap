@@ -11,6 +11,7 @@
 renv/**
 
 .env
+.claude
 
 # DATA
 # SNAP ABAWD WAIVERS

@@ -35,11 +35,11 @@ openai_abawd_waivers: \
 $(100_RAW_USDA)/1000_abawd_waivers/10001_abawd_waiver_pdf_document_inventory.csv:
 	@echo "======================= MAKING ABAWD PDF DOCUMENT INVENTORY ======================="
 	@echo "Assumes that all relevant ABAWD waivers have been downloaded/scraped"
-	@echo "These can be scraped by using  download_abawd_waivers.R"
+	@echo "These can be scraped by using  2110_download_abawd_waivers.R"
 	@echo "-------------------------------------------------------------------------"
 
 	@echo "Generating document inventory CSV"
-	Rscript --quiet $(211_ABAWD_WAIVERS)/make_abawd_waiver_db.R
+	Rscript --quiet $(211_ABAWD_WAIVERS)/2111_make_abawd_waiver_db.R
 	@echo "Generated document inventory"
 	@echo ========================================================================="
 
