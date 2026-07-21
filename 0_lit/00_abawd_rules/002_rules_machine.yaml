@@ -1,0 +1,146 @@
+# ABAWD waiver qualifying criteria — machine-readable rule codes
+#
+# STUB INTERFACE for a future programmatic rule-checker. This file declares the canonical
+# criterion codes, their effective windows, thresholds, and data hooks. It contains NO checking
+# logic — the checker (a later phase) will read this as its rule table. The human-readable source
+# of truth is 001_abawd_waiver_rules.md; keep the two in sync.
+#
+# STATUS: DRAFT pending Josh's Phase-1 checkpoint sign-off (see 001 §8). Fields marked
+# `pending_josh: true` are not yet confirmed.
+
+meta:
+  version: 0.1.0-draft
+  compiled: 2026-07-21
+  authority_spine: 000_sources/000a_deep_research_rules_history.md
+  paper_label_source: 000_sources/000b_paper_rule_definitions.md
+  notes: >
+    Dates are ISO-8601. `effective_end: null` means still in force. A criterion is a legally
+    available waiver basis on date D iff effective_start <= D <= (effective_end or +inf).
+
+# ---------------------------------------------------------------------------
+# Companion attributes carried alongside the criterion code on each panel row.
+# ---------------------------------------------------------------------------
+attributes:
+  scope:
+    values: [area, statewide]
+    doc: >
+      `statewide` marks blanket coverage (EB-triggered statewide waivers; federal suspensions).
+      Replaces the plan's proposed `statewide_eb` code — statewide EB is `eb_trigger` + scope.
+  statutory_prong:
+    values: [pct10, insufficient_jobs, noncontig_1p5x, federal_suspension]
+    pending_josh: true   # 001 §8 item 4 — explicit field vs. derive-from-code
+    doc: The two-level PRWORA structure; `[Insufficient Jobs]` is a parent, not a leaf code.
+
+# ---------------------------------------------------------------------------
+# Canonical criterion codes.
+# ---------------------------------------------------------------------------
+criteria:
+
+  - code: pct10_statutory
+    paper_label: "[10% Rule]"
+    statutory_prong: pct10
+    definition: Area unemployment rate over 10 percent.
+    threshold: {operator: gt, value_pct: 10.0, base: area_rate}
+    evidence_forms: [recent_12mo_avg, recent_3mo_avg, historical_seasonal]
+    window: {type: recency_only, fixed_24mo: false}   # legal def has NO fixed window
+    self_certifiable: true
+    data_source: BLS_LAUS_nsa
+    effective_start: 1996-08-22
+    effective_end: null                                 # survives OBBB
+    authority: ["7 USC 2015(o)(4)(A)(i)", "7 CFR 273.24(f)(1)(i),(f)(2)(i),(f)(3)(i)"]
+    notes: >
+      Paper's MODEL recasts this as min{1.2*natl, 0.10} over a 24mo window (001 §4.1); that is a
+      modeling choice, not the labeling rule. pending_josh (001 §8 item 3).
+
+  - code: pct20_above_natl
+    paper_label: "[20% Rule]"
+    statutory_prong: insufficient_jobs
+    definition: Area 24-month average unemployment rate at least 20% above the national average.
+    threshold: {operator: gte, value_pct_above_national: 20.0, base: area_24mo_avg}
+    floor_pct: null      # NO 6% floor in current (reverted-2001) law
+    ceiling_pct: null    # NO 10% ceiling
+    window:
+      type: fixed_24mo
+      earliest_start_rule: jan1_of_FYlabel_minus_3   # 001 §5.2 — Jan 1 of (waiver-FY - 3)
+      pending_josh: true                              # correction #2, verify vs paper's gloss
+    data_source: BLS_LAUS_nsa
+    national_series: BLS_LN
+    effective_start: 2001-01-17    # 2001 final rule (66 FR 4437), NOT 2006 — correction #1
+    effective_end: 2025-07-04      # OBBB struck insufficient-jobs prong
+    pending_josh: true             # 001 §8 item 1 (origin year)
+    authority: ["7 CFR 273.24(f)(2)(ii),(f)(3)(iii)", "66 FR 4437 (2001)"]
+
+  - code: lsa
+    paper_label: "[LSA]"
+    statutory_prong: insufficient_jobs
+    definition: Area designated a Labor Surplus Area by DOL/ETA.
+    threshold: {operator: gte, value_pct_above_national: 20.0, base: civil_jurisdiction_24mo_avg}
+    floor_pct: 6.0       # never LSA below 6%
+    ceiling_pct: 10.0    # automatic LSA at/above 10%
+    window: {type: fixed_24mo, reference_period: "two calendar years ending Dec 31 before Oct 1"}
+    geography_universe: dol_civil_jurisdictions   # DIFFERENT from BLS LAUS units
+    self_certifiable: true    # current-FY LSA area, (f)(4)
+    data_source: DOL_ETA_LSA_annual_list
+    effective_start: 1996-08-22
+    effective_end: 2025-07-04
+    authority: ["7 CFR 273.24(f)(2)(ii),(f)(3)(ii),(f)(4)", "20 CFR 654.5", "20 CFR 654.4(d)"]
+
+  - code: eb_trigger
+    paper_label: "[EB]"
+    statutory_prong: insufficient_jobs
+    definition: Area/state qualifies for Extended Benefits (IUR/TUR trigger) or EUC in-window.
+    triggers:
+      iur: {mandatory: {min_pct: 5.0, vs_prior2yr_avg_pct: 120}, optional_flat_pct: 6.0}
+      tur: {standard: {min_pct: 6.5, vs_prior2yr_pct: 110}, high_tier_pct: 8.0}
+    default_scope: statewide     # automatic statewide waiver, <=12 months
+    data_source: DOL_ETA_trigger_notice   # built on weekly ETA-539
+    euc_in_window: {start: 2008, end: 2013}
+    effective_start: 1996-08-22
+    effective_end: 2025-07-04
+    authority: ["7 CFR 273.24(f)(2)(ii)", "P.L. 91-373", "FNS statewide-EB guidance 2009-01"]
+
+  - code: federal_suspension
+    paper_label: "federal suspension"
+    statutory_prong: federal_suspension
+    definition: ABAWD time limit suspended nationwide; no application required.
+    scope: statewide
+    periods:
+      - {name: ARRA, start: 2009-04-01, end: 2010-09-30, authority: "ARRA sec 101(e), P.L. 111-5"}
+      - {name: FFCRA, start: 2020-04-01, end: 2023-06-30, authority: "FFCRA sec 2301, P.L. 116-127"}
+    notes: >
+      FFCRA end (2023-06-30) is PHE-tied and CONFIRMED. CAA-2023 ended emergency ALLOTMENTS
+      (FFCRA sec 2302) after Feb 2023 — a different provision; do not use it for the ABAWD suspension.
+
+  - code: noncontig_1p5x
+    paper_label: null    # post-dates the paper draft
+    statutory_prong: noncontig_1p5x
+    definition: Noncontiguous state (AK/HI) statewide unemployment rate at or above 1.5x national.
+    threshold: {operator: gte, multiple_of_national: 1.5, base: state_rate}
+    applies_to: noncontiguous_states   # not the 48 contiguous + DC; excludes Guam/USVI
+    scope: statewide
+    effective_start: 2025-07-04
+    effective_end: null
+    authority: ["OBBB sec 10102(b), P.L. 119-21", "7 USC 2015(o)(4)(A)(ii) as amended"]
+
+  - code: other
+    paper_label: "softer criteria"
+    statutory_prong: insufficient_jobs
+    definition: >
+      Softer insufficient-jobs evidence: low/declining employment-to-population ratio;
+      declining occupations or industries; academic study or other publication.
+    threshold: null    # no fixed quantitative threshold
+    effective_start: 1996-08-22
+    effective_end: 2025-07-04
+    authority: ["7 CFR 273.24(f)(2)(ii)"]
+
+# ---------------------------------------------------------------------------
+# Cross-cutting operational rules (checker stubs; see 001 §5).
+# ---------------------------------------------------------------------------
+operational_rules:
+  grouping:
+    contiguity_required_since: 2016      # geographically contiguous OR economic region
+    group_qualifies_if: aggregate_meets_threshold   # constituent units need not each qualify
+  no_double_counting: {since: 2006, rule: groups_within_application_are_disjoint}
+  duration_default_months: 12
+  data_seasonal_adjustment: not_seasonally_adjusted
+  rounding: {source: FNS_2006_memo, exact_rule: UNVERIFIED, pending_josh: true}   # 001 §8 item 5
