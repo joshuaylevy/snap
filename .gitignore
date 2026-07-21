@@ -22,6 +22,11 @@ renv/**
 1_data/10_raw/100_usda/1001_abawd_openai_responses/**/*.json
 # Archives of prior OpenAI response folders (zip from 2210_extract_abawd_waivers.py)
 1_data/10_raw/100_usda/archives/*.zip
+# FNA rebuild corpus: regenerable from the scraper + manifest, so kept out of git
+# (see verification: pipeline must rebuild from a clean checkout with the corpus absent).
+1_data/10_raw/102_fna/1020_timelimit_waiver_docs/**/*.pdf
+1_data/10_raw/102_fna/1020_timelimit_waiver_docs/**/*.doc
+1_data/10_raw/102_fna/1020_timelimit_waiver_docs/**/*.docx
 
 # SCRIPTS
 # Helper scripts and cache

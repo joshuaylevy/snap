@@ -84,11 +84,12 @@ LIT := 0_lit
 
 # Phase 2 -- recon the FNA site: discover FY-batch pages and map document links
 fna_recon:
-	@echo "[stub] fna_recon: $(212_FNA_TIMELIMIT)/2120_recon_fna_site.py not yet implemented"
+	$(CONDA_ACTIVATE) && python $(212_FNA_TIMELIMIT)/2120_recon_fna_site.py
 
-# Phase 2 -- deterministic, resumable, rate-limited download into per-FY folders
+# Phase 2 -- deterministic, resumable, rate-limited download into per-FY folders.
+# Optional subsetting: make fna_download FNA_ARGS="--batches 2015-2019"
 fna_download:
-	@echo "[stub] fna_download: $(212_FNA_TIMELIMIT)/2121_download_fna_waiver_docs.py not yet implemented"
+	$(CONDA_ACTIVATE) && python $(212_FNA_TIMELIMIT)/2121_download_fna_waiver_docs.py $(FNA_ARGS)
 
 # Phase 2 -- content-hash document inventory (document_id = sha256(file content))
 fna_inventory:
