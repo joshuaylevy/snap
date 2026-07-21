@@ -186,10 +186,21 @@ def main():
             w.writerows(sorted(zman.values(), key=lambda r: r["file_name"]))
         time.sleep(REQUEST_DELAY_S)
 
+    # Merge with any existing inventory so a --fys subset run does not clobber other FYs:
+    # drop prior rows for the zips processed this run, then add this run's rows.
+    processed_zips = {r["file_name"] for r in
+                      (zman[u] for u in zip_urls)}
+    merged = {}
+    if FILE_MANIFEST.exists():
+        for r in csv.DictReader(FILE_MANIFEST.open(newline="")):
+            if r["zip_file_name"] not in processed_zips:
+                merged[(r["zip_file_name"], r["rel_path"])] = r
+    for r in file_rows:
+        merged[(r["zip_file_name"], r["rel_path"])] = r
     with FILE_MANIFEST.open("w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=FILE_FIELDS)
         w.writeheader()
-        w.writerows(sorted(file_rows, key=lambda r: (r["fiscal_year"], r["rel_path"])))
+        w.writerows(sorted(merged.values(), key=lambda r: (r["fiscal_year"], r["rel_path"])))
     ok_n = sum(1 for r in zman.values() if r["status"] == "ok")
     print(f"[zip] done: {ok_n}/{len(zman)} zips ok; {len(file_rows)} files extracted "
           f"-> {FILE_MANIFEST}", file=sys.stderr)
