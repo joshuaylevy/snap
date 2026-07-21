@@ -27,6 +27,8 @@ renv/**
 1_data/10_raw/102_fna/1020_timelimit_waiver_docs/**/*.pdf
 1_data/10_raw/102_fna/1020_timelimit_waiver_docs/**/*.doc
 1_data/10_raw/102_fna/1020_timelimit_waiver_docs/**/*.docx
+# FNA application ("State Requests and Data") zips + everything extracted from them.
+1_data/10_raw/102_fna/1023_application_docs/
 
 # SCRIPTS
 # Helper scripts and cache
