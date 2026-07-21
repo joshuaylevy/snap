@@ -11,7 +11,10 @@
 renv/**
 
 .env
-.claude
+# Ignore .claude contents (settings.local.json, etc.) but version the plans so
+# rebuild plans travel with the repo across sessions/machines.
+.claude/*
+!.claude/plans/
 
 # DATA
 # SNAP ABAWD WAIVERS
