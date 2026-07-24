@@ -1,0 +1,167 @@
+Extract structured data from the attached USDA FNS/FNA ABAWD time-limit waiver
+document into ONE JSON object matching the schema in 2220c_schema.json.
+
+Return ONLY valid JSON (no markdown fences, no prose). Use null for missing
+scalars and [] for empty lists. Never invent values; if the document does not
+state something, use null.
+
+======================================================================
+WHAT THESE DOCUMENTS ARE
+======================================================================
+A state SNAP agency asks FNS/FNA to waive the ABAWD work-time-limit (the 3-in-36
+month rule) for specified geographic areas where jobs are insufficient. FNS
+records its decision on a "Waiver Response" form (numbered fields) and/or a
+decision letter. Many documents are scanned images of forms; some are typed
+tables listing dozens of counties/cities. Read carefully; transcribe names and
+numbers exactly as printed (preserve original spellings and apparent typos in
+geographic-unit names). Every geographic unit keeps its verbatim printed string in
+orig_text; see GEOGRAPHIC UNITS below for how name / area_type / orig_text split.
+
+======================================================================
+DOCUMENT STRUCTURE: request_level + groups
+======================================================================
+- request_level: fields describing the whole request/response (serial number,
+  type of request, state, region, the FNS action text, and the form's dates).
+- groups[]: one entry per geographic bundle evaluated under a COMMON action and
+  a COMMON qualifying rule. Each group carries its geographic_units[] plus the
+  rule, evidence, and dates for that bundle.
+
+  SPLITTING RULE: if the request lists many areas but assigns DIFFERENT rules or
+  DIFFERENT actions to different areas, put each rule/action combination in its
+  own group. Example (WI FY2003, serial 2020071): some counties approved as
+  "Labor Surplus Area" and others as "20 percent above national" -> two groups
+  (one lsa group with its counties, one pct20_above_natl group with its
+  counties), even though all share one serial number. If every area shares the
+  same rule and action, one group is fine.
+
+  Set request_level.number_of_groups = len(groups).
+
+======================================================================
+CRITERION CLASSIFICATION (canonical codes from the rules KB)
+======================================================================
+Classify the rule the document INVOKES for each group into criterion_code, and
+also copy the document's own wording into criterion_verbatim. Codes:
+
+  pct10_statutory   Area unemployment rate over 10 percent (statutory "10% Rule").
+  pct20_above_natl  Area 24-month avg rate at least 20% ABOVE the national average
+                    ("20% Rule" / "insufficient jobs" by the 20%-above test).
+  lsa               Area is a DOL-designated Labor Surplus Area (LSA). Language like
+                    "labor surplus area", "designated LSA", "20 CFR 654".
+  eb_trigger        Area/state qualifies via Extended Benefits / EUC / "extended
+                    unemployment benefits" (EUB) trigger (IUR/TUR). Often statewide.
+  federal_suspension  Nationwide statutory suspension, NO area test: ARRA
+                    (Apr 2009-Sep 2010) or FFCRA/COVID (Apr 2020-Jun 2023).
+  noncontig_1p5x    Noncontiguous state (AK/HI) statewide rate >= 1.5x national
+                    (OBBB 2025 onward only).
+  other             Softer "insufficient jobs" evidence with no fixed threshold:
+                    low/declining employment-to-population ratio, declining
+                    industry/occupation, an academic study or publication.
+  null              Cannot determine the rule.
+
+Guidance:
+- Recognize, don't re-derive. If FNS says the area is an LSA, code lsa even if
+  the letter doesn't restate the unemployment math.
+- "20 percent above the national average" -> pct20_above_natl, NOT pct10_statutory.
+  A bare "over 10 percent" / ">10% unemployment" -> pct10_statutory.
+- Effective-date sanity check (flag internal inconsistencies in criteria_summary_text,
+  do not silently drop): pct20_above_natl and lsa exist FY-wide from 1996 until the
+  OBBB (2025) repeal; federal_suspension only in the ARRA and FFCRA windows;
+  noncontig_1p5x only FY2026+. If a document invokes a rule outside its window,
+  extract what it says and note the tension.
+
+======================================================================
+GEOGRAPHIC UNITS: name / area_type / orig_text + BLS-LAUS classification
+======================================================================
+For each geographic unit, emit three name fields and two classification flags.
+- orig_text: the unit EXACTLY as printed, including the trailing type word and any
+  spelling/typo (e.g. "Eau Claire city", "Balance of Adams County", "Bad River
+  Reservation"). This is the ground-truth anchor; never omit it.
+- name: the core place name with the trailing type word removed ("Eau Claire",
+  "Adams", "Bad River"). Preserve original spelling.
+- area_type: the unit type when stated or inferable (county, city, parish, borough,
+  census area, reservation area, LMA, independent city, planning region, town,
+  balance of county, statewide, national); else null.
+
+non_standard_geography (boolean): true when the unit has NO clean single BLS/LAUS
+published series. Standard LAUS units (set false) are the geographies BLS publishes
+unemployment estimates for: census regions/divisions; states, DC, Puerto Rico; OMB
+federal statistical areas (metropolitan statistical areas, metropolitan divisions,
+micropolitan areas, combined statistical areas, and pre-2025 New England
+NECTAs/NECTA divisions); small labor market areas; counties and county-equivalents
+(parishes, boroughs, Alaska census areas, independent cities, Connecticut planning
+regions, Puerto Rico municipios); cities/places with population >= 25,000; all New
+England cities and towns regardless of size; and "balance of county/state" residual
+series. Set true (and give a short non_standard_geography_note) for anything else:
+tribal reservations, sub-city neighborhoods/wards, ZIP codes, school districts,
+census tracts, sub-25,000 non-New-England places, and custom/partial-area carve-outs.
+NECTA rule: for documents dated before 2025, treat New England NECTAs and NECTA
+divisions as STANDARD (they were published then, though later discontinued). Default
+to false; use null only when the unit text is too illegible to classify.
+
+balance_of_county (boolean): true if the unit is the "balance of" a county — the
+county minus its separately-listed cities/towns ("Balance of X County", "remainder
+of X", "X County excluding ..."). A balance-of-county area is itself a standard LAUS
+series, so keep its non_standard_geography = false. Default to false; use null only
+when the unit text is too illegible to classify.
+
+======================================================================
+SOFTER "INSUFFICIENT JOBS" LANGUAGE (per group)
+======================================================================
+FNS's 1996 guidance allowed waivers for areas with a "lack of jobs due to lagging
+job growth" or a "lack of jobs in declining occupations or industries" — soft
+standards with no numeric threshold. Set soft_criterion_invoked = true whenever this
+kind of language (including a declining employment-to-population ratio or a cited
+study) appears in the applicant's or FNS's rationale, EVEN IF a hard criterion (20%
+rule, LSA, EB) is also cited, and copy the phrase into soft_criterion_verbatim. This
+flag is INDEPENDENT of criterion_code: criterion_code stays the hard rule that was
+used, or 'other' only when the soft rationale is the sole basis. false if only
+threshold/designation criteria appear; null if the rationale text is absent.
+
+======================================================================
+NON-CONFORMING DATA (per group)
+======================================================================
+The 2006 guidance requires non-seasonally-adjusted BLS/LAUS figures under a
+standardized 24-month averaging and rounding procedure. In data_nonconformance,
+flag any departure the document REVEALS — FNS often names it explicitly when
+rejecting: non_bls_source (a non-BLS data source), seasonally_adjusted (SA figures),
+nonstandard_averaging (a window/average/rounding other than the standard 24-month
+non-SA procedure), older_vintage (explicit reliance on an older BLS vintage). Set a
+flag true only on affirmative evidence, false when the conforming practice is shown,
+and leave the whole object null when the document gives no data-methodology detail
+for the group. Put brief support in note.
+
+======================================================================
+DOUBLE-COUNTING CHECK (request level)
+======================================================================
+After forming groups, check whether any single geographic unit appears in MORE THAN
+ONE group (banned since the 2006 guidance). Count near-duplicates: a county and its
+own "balance of" remainder, or spelling variants of the same place. If found, set
+request_level.possible_double_counting = true and name the unit(s) and groups in
+double_counting_note; otherwise false. Use null only for non-conforming, zero-group,
+or single-group documents where the check is moot.
+
+======================================================================
+DATES AND NUMBERS
+======================================================================
+- Dates: YYYY-MM-DD where a full date is determinable; YYYY-MM for data windows
+  (start_date/end_date/vintage). If only text is available for expiration_date,
+  keep the text. Otherwise null.
+- Distinguish GRANTED dates (waiver_effective_date/waiver_expiry_date, from FNS)
+  from APPLIED-FOR dates (applied_waiver_*), only when the document states both.
+- Unemployment rates are percent numbers (e.g. 5.8, not 0.058). Put the national
+  reference rate in national_unemployment_rate_cited and the area rate + its time
+  window in local_unemployment.
+
+======================================================================
+QUALITY CONTROL
+======================================================================
+- If the PDF has no usable waiver decision/request content (e.g. it is only a
+  map, a data spreadsheet, or an unrelated cover page), set
+  non_conforming_document = true, give a short non_conforming_reason, set
+  groups = [] and number_of_groups = 0.
+- Prefer faithful transcription of the FNS form fields first; fill normalized
+  fields only when supported. When unsure, keep source wording in the *_text /
+  *_verbatim / criteria_summary_text fields and leave the normalized code null.
+- fns_response_only documents may lack state-submission fields; keep those null.
+
+Return the single JSON object now.
