@@ -91,14 +91,21 @@ def _state_from_name(name: str) -> Optional[str]:
 def build_worklist(
     states: Optional[Iterable[str]] = None,
     fys: Optional[Iterable[int]] = None,
+    json_root: Optional[pathlib.Path] = None,
 ) -> pd.DataFrame:
     """Response PDFs to extract, optionally filtered by state code and/or fiscal year.
 
     Returns columns: doc_stub, state_code, fiscal_year, batch, source_pdf_path,
     out_json_path, n_pages_note. One row per PDF. doc_stub is a stable slug used for
-    the output JSON filename and as a human handle."""
+    the output JSON filename and as a human handle.
+
+    json_root sets where out_json_path points; it defaults to CLAUDE_DIR. Pass a
+    sibling directory (e.g. 1022_extractions/claude_v1_2_sonnet) to run a different
+    spec — prompt revision, replicate, or a different model — without overwriting an
+    existing run's JSONs. The run_id (spec hash) still distinguishes ledger rows."""
     states_up = {s.upper() for s in states} if states else None
     fys_set = {int(f) for f in fys} if fys else None
+    root = pathlib.Path(json_root) if json_root is not None else CLAUDE_DIR
 
     rows = []
     for pdf in sorted(RESP_DOCS_DIR.rglob("*.pdf")) + sorted(RESP_DOCS_DIR.rglob("*.PDF")):
@@ -111,7 +118,7 @@ def build_worklist(
             continue
         batch = pdf.parent.name
         stub = pdf.stem.lower()  # e.g. wi-abawd-response-fy2003
-        out_json = CLAUDE_DIR / batch / f"{stub}.json"
+        out_json = root / batch / f"{stub}.json"
         rows.append({
             "doc_stub": stub,
             "state_code": sc,
@@ -459,6 +466,7 @@ def collate_extraction(
     meta: dict,
     run_id: str,
     extractor: str = "claude_in_harness",
+    model_tag: str = MODEL_TAG,
 ) -> dict:
     """Validate a written extraction JSON, count groups/units, upsert the ledger row.
     Returns the ledger row dict (also for CLI reporting)."""
@@ -484,7 +492,7 @@ def collate_extraction(
         "extractor": extractor,
         "run_id": run_id,
         "run_short": run_short(run_id),
-        "model_tag": MODEL_TAG,
+        "model_tag": model_tag,
         "doc_stub": meta.get("doc_stub"),
         "state_code": meta.get("state_code"),
         "fiscal_year": meta.get("fiscal_year"),

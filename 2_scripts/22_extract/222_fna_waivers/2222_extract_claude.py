@@ -17,6 +17,12 @@ Subcommands:
   collate   --states WI NC [--fys ...]             validate written JSONs -> ledger
   status    [--states ...] [--fys ...]             show current ledger rows
 
+worklist/collate also take --json-root and --model-tag. A run is identified by its
+spec hash (run_id = instruction + prompt + schema + model_tag), but the output PATH
+is just claude/<batch>/<stub>.json, so a new spec would silently overwrite an older
+run's JSONs. Point --json-root at a sibling directory to keep runs side by side, and
+pass the same --json-root/--model-tag to collate.
+
 Typical flow:
   1) python 2_scripts/.../2222_extract_claude.py worklist --states WI NC
   2) (Claude fans out one agent per PDF; each writes out_json_path)
@@ -36,14 +42,14 @@ import fna_extraction_results as R  # noqa: E402
 
 
 def _worklist(args) -> None:
-    wl = R.build_worklist(states=args.states, fys=args.fys)
+    wl = R.build_worklist(states=args.states, fys=args.fys, json_root=args.json_root)
     if wl.empty:
         print("No matching response PDFs.", file=sys.stderr)
         return
-    run_id = R.compute_run_id()
+    run_id = R.compute_run_id(model_tag=args.model_tag)
     pd.set_option("display.max_colwidth", 80)
     pd.set_option("display.width", 200)
-    print(f"run_id={run_id}  ({R.run_short(run_id)})  model={R.MODEL_TAG}")
+    print(f"run_id={run_id}  ({R.run_short(run_id)})  model={args.model_tag}")
     print(f"{len(wl)} documents to extract "
           f"[states={args.states or 'ALL'} fys={args.fys or 'ALL'}]\n")
     print(wl[["doc_stub", "state_code", "fiscal_year", "batch"]].to_string(index=False))
@@ -62,11 +68,11 @@ def _worklist(args) -> None:
 
 
 def _collate(args) -> None:
-    wl = R.build_worklist(states=args.states, fys=args.fys)
+    wl = R.build_worklist(states=args.states, fys=args.fys, json_root=args.json_root)
     if wl.empty:
         print("No matching response PDFs.", file=sys.stderr)
         return
-    run_id = R.compute_run_id()
+    run_id = R.compute_run_id(model_tag=args.model_tag)
     rows = []
     for _, r in wl.iterrows():
         meta = {k: r[k] for k in ("doc_stub", "state_code", "fiscal_year", "batch")}
@@ -75,11 +81,12 @@ def _collate(args) -> None:
             json_path=pathlib.Path(r["out_json_path"]),
             meta=meta,
             run_id=run_id,
+            model_tag=args.model_tag,
         )
         rows.append(row)
     rep = pd.DataFrame(rows)
     pd.set_option("display.width", 200)
-    print(f"run_id={run_id}  ({R.run_short(run_id)})")
+    print(f"run_id={run_id}  ({R.run_short(run_id)})  model={args.model_tag}")
     print(rep[["doc_stub", "status", "n_groups", "n_units", "schema_errors"]].to_string(index=False))
     ok = (rep["status"] == "ok").sum()
     print(f"\n{ok}/{len(rep)} valid  |  ledger -> {R.LEDGER_CSV}")
@@ -111,6 +118,14 @@ def main() -> None:
         sp = sub.add_parser(name)
         sp.add_argument("--states", nargs="*", default=None, help="state codes, e.g. WI NC")
         sp.add_argument("--fys", nargs="*", type=int, default=None, help="fiscal years")
+        if name != "status":
+            sp.add_argument("--json-root", default=None, type=pathlib.Path,
+                            help="write/read JSONs under this root instead of "
+                                 f"{R.CLAUDE_DIR} (use for a prompt revision, a "
+                                 "replicate, or a different model)")
+            sp.add_argument("--model-tag", default=R.MODEL_TAG,
+                            help=f"model tag recorded in the ledger and hashed into "
+                                 f"the run_id (default {R.MODEL_TAG})")
         sp.set_defaults(func=fn)
     args = ap.parse_args()
     args.func(args)
