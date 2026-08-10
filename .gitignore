@@ -42,6 +42,12 @@ renv/**
 !1_data/10_raw/102_fna/1022_extractions/**/*.json
 1_data/10_raw/102_fna/1022_extractions/*.csv
 
+# GEO REFERENCE (state geography context build)
+# Raw Census/BLS reference pulls: regenerable via make geo_fetch.
+1_data/10_raw/103_geo/
+# Hand-curated county-change log: versioned source input (overrides blanket *.csv).
+!0_lit/01_geo/010_county_changes_1997_present.csv
+
 # SCRIPTS
 # Helper scripts and cache
 2_scripts/22_extract/221_abawd_waivers/__pycache__/
