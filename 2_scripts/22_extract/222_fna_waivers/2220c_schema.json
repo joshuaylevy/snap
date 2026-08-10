@@ -5,71 +5,245 @@
   "description": "Canonical extraction schema for a single FNA ABAWD time-limit waiver document (application, FNS/FNA response, or combined). Nested: request_level (document-wide fields) + groups[] (geographic bundles) each holding geographic_units[]. Flattened downstream to one panel row per (document x group x geographic unit) to align with the ND/WI hand-collected gold standard. Provenance (document_id, paths, run_id, extractor) is attached by the driver, NOT emitted by the model. v1_1 adds: per-unit orig_text / non_standard_geography / balance_of_county; per-group soft_criterion_invoked and data_nonconformance; request-level possible_double_counting.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["request_level", "groups"],
+  "required": [
+    "request_level",
+    "groups"
+  ],
   "properties": {
     "request_level": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "document_type", "non_conforming_document", "waiver_serial_number",
-        "state", "number_of_groups"
+        "document_type",
+        "non_conforming_document",
+        "waiver_serial_number",
+        "state",
+        "number_of_groups"
       ],
       "properties": {
         "document_type": {
           "type": "string",
-          "enum": ["full_application", "fns_response_only", "state_request_only", "other_nonstandard"],
+          "enum": [
+            "full_application",
+            "fns_response_only",
+            "state_request_only",
+            "other_nonstandard"
+          ],
           "description": "Classification of what this PDF is. 'fns_response_only' = an FNS/FNA decision letter or Waiver Response form with no state application attached. 'state_request_only' = the state's request with no FNS action. 'full_application' = state request AND FNS response bundled. 'other_nonstandard' = anything else (cover memo, map, data spreadsheet only)."
         },
-        "non_conforming_document": {"type": "boolean", "description": "true if this document carries no usable ABAWD waiver decision/request content."},
-        "non_conforming_reason": {"type": ["string", "null"], "description": "< 50 words, only when non_conforming_document = true, else null."},
-
+        "non_conforming_document": {
+          "type": "boolean",
+          "description": "true if this document carries no usable ABAWD waiver decision/request content."
+        },
+        "non_conforming_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "< 50 words, only when non_conforming_document = true, else null."
+        },
         "waiver_serial_number": {
-          "type": ["string", "array", "null"],
-          "items": {"type": "string"},
+          "type": [
+            "string",
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
           "description": "FNS Waiver Serial Number (near the top and in field 1 of the Waiver Response). String for one; array of strings if several serials appear in one document. null if absent."
         },
-        "type_of_request": {"type": ["string", "null"], "description": "'Type of Request' verbatim: e.g. 'Initial', 'Extension', 'Modification', 'Extension and Modification'."},
-        "primary_regulation_citation": {"type": ["string", "null"], "description": "'Primary regulation citation', e.g. '7 CFR 273.24'. Verbatim."},
-
-        "state": {"type": ["string", "null"], "description": "State/jurisdiction name exactly as shown on the form."},
-        "state_name": {"type": ["string", "null"], "description": "Normalized full state name, e.g. 'Wisconsin'."},
-        "state_code": {"type": ["string", "null"], "description": "Two-letter USPS code, e.g. 'WI'."},
-        "fns_region": {"type": ["string", "null"], "description": "'Region' verbatim (name or abbreviation, e.g. 'Midwest', 'MWRO', 'Southeast', 'SERO')."},
-
-        "action_reason_approval_denial": {"type": ["string", "null"], "description": "'Action and reason for approval or denial' - whether FNS approved/denied and why. Near-verbatim."},
-        "reg_leg_action_basis": {"type": ["string", "null"], "description": "'Regulatory or legislative basis for action' - the legal authority FNS cites."},
-        "conditions_and_reasons": {"type": ["string", "null"], "description": "'Conditions and reasons' (may be 'None')."},
-        "info_required_for_extension": {"type": ["string", "null"], "description": "'Information required for extension'."},
-        "expiration_date": {"type": ["string", "null"], "description": "'Expiration date'. YYYY-MM-DD if determinable, else the verbatim text, else null."},
-        "limits_on_regional_office_approvals": {"type": ["string", "null"], "description": "'Limitation, if any, on regional office approval of like requests'."},
-        "quality_control_procedures": {"type": ["string", "null"], "description": "'Quality control procedures' text."},
-        "alt_procedures_desc": {"type": ["string", "null"], "description": "'Description of proposed alternative procedures'. Often long; if it contains tables/lists, encode as a valid escaped markdown string. null if absent."},
-
-        "date_national_office_action": {"type": ["string", "null"], "description": "'Date of national office action'. YYYY-MM-DD if determinable, else null."},
-        "date_state_request": {"type": ["string", "null"], "description": "'Date of State agency request'. YYYY-MM-DD or null."},
-        "date_ro_transmittal_request": {"type": ["string", "null"], "description": "'Date of regional office transmittal of request'. YYYY-MM-DD or null."},
-        "date_ro_transmittal_response": {"type": ["string", "null"], "description": "'Date of regional office transmittal of response to State agency'. YYYY-MM-DD or null."},
-        "implementation_date_actual": {"type": ["string", "null"], "description": "'Actual implementation date'. YYYY-MM-DD or null."},
-        "response_date": {"type": ["string", "null"], "description": "Date on the FNS letter/date line. YYYY-MM-DD or null."},
-
-        "state_official_name": {"type": ["string", "null"]},
-        "fns_official_name": {"type": ["string", "null"]},
-        "fns_official_title": {"type": ["string", "null"]},
-
-        "number_of_groups": {"type": "integer", "minimum": 0, "description": "Count of geographic bundles in groups[] (0 if none / non-conforming)."},
-
-        "possible_double_counting": {"type": ["boolean", "null"], "description": "true if a single geographic unit appears in MORE THAN ONE group in this request (a unit assigned to multiple waived groups; banned since the 2006 guidance). Include near-duplicates: a county and its own 'balance of' remainder, or spelling variants of the same place. false if every unit is unique across groups; null for non-conforming / zero- or single-group documents where the check is moot."},
-        "double_counting_note": {"type": ["string", "null"], "description": "The unit(s) involved and the groups they span. null unless possible_double_counting = true."}
+        "type_of_request": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Type of Request' verbatim: e.g. 'Initial', 'Extension', 'Modification', 'Extension and Modification'."
+        },
+        "primary_regulation_citation": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Primary regulation citation', e.g. '7 CFR 273.24'. Verbatim."
+        },
+        "state": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "State/jurisdiction name exactly as shown on the form."
+        },
+        "state_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Normalized full state name, e.g. 'Wisconsin'."
+        },
+        "state_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Two-letter USPS code, e.g. 'WI'."
+        },
+        "fns_region": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Region' verbatim (name or abbreviation, e.g. 'Midwest', 'MWRO', 'Southeast', 'SERO')."
+        },
+        "action_reason_approval_denial": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Action and reason for approval or denial' - whether FNS approved/denied and why. Near-verbatim."
+        },
+        "reg_leg_action_basis": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Regulatory or legislative basis for action' - the legal authority FNS cites."
+        },
+        "conditions_and_reasons": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Conditions and reasons' (may be 'None')."
+        },
+        "info_required_for_extension": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Information required for extension'."
+        },
+        "expiration_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Expiration date'. YYYY-MM-DD if determinable, else the verbatim text, else null."
+        },
+        "limits_on_regional_office_approvals": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Limitation, if any, on regional office approval of like requests'."
+        },
+        "quality_control_procedures": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Quality control procedures' text."
+        },
+        "alt_procedures_desc": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Description of proposed alternative procedures'. Often long; if it contains tables/lists, encode as a valid escaped markdown string. null if absent."
+        },
+        "date_national_office_action": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Date of national office action'. YYYY-MM-DD if determinable, else null."
+        },
+        "date_state_request": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Date of State agency request'. YYYY-MM-DD or null."
+        },
+        "date_ro_transmittal_request": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Date of regional office transmittal of request'. YYYY-MM-DD or null."
+        },
+        "date_ro_transmittal_response": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Date of regional office transmittal of response to State agency'. YYYY-MM-DD or null."
+        },
+        "implementation_date_actual": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "'Actual implementation date'. YYYY-MM-DD or null."
+        },
+        "response_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Date on the FNS letter/date line. YYYY-MM-DD or null."
+        },
+        "state_official_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fns_official_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fns_official_title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "number_of_groups": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of geographic bundles in groups[] (0 if none / non-conforming)."
+        },
+        "possible_double_counting": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "true if a single geographic unit appears in MORE THAN ONE group in this request (a unit assigned to multiple waived groups; banned since the 2006 guidance). Include near-duplicates: a county and its own 'balance of' remainder, or spelling variants of the same place. false if every unit is unique across groups; null for non-conforming / zero- or single-group documents where the check is moot."
+        },
+        "double_counting_note": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The unit(s) involved and the groups they span. null unless possible_double_counting = true."
+        }
       }
     },
-
     "groups": {
       "type": "array",
       "description": "One entry per geographic bundle evaluated under a common action/rationale. A bundle may hold one or many geographic units. If different units in the same request are approved under different rules or with different actions, split them into separate groups.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["geographic_units", "group_action", "criterion_code"],
+        "required": [
+          "geographic_units",
+          "group_action",
+          "criterion_code",
+          "qualification_level"
+        ],
         "properties": {
           "geographic_units": {
             "type": "array",
@@ -77,75 +251,353 @@
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["name", "orig_text"],
+              "required": [
+                "name",
+                "orig_text"
+              ],
               "properties": {
-                "orig_text": {"type": "string", "description": "The unit EXACTLY as printed, including the trailing type word and any spelling/typo (e.g. 'Eau Claire city', 'Balance of Adams County', 'Bad River Reservation'). Ground-truth anchor for deterministic downstream parsing; never omit."},
-                "name": {"type": "string", "description": "Core place name with the trailing type word removed (e.g. 'Eau Claire', 'Adams', 'Bad River'). Preserve original spelling, including apparent typos."},
-                "area_type": {"type": ["string", "null"], "description": "Unit type if stated/inferable: county, city, parish, borough, census area, reservation area, LMA/labor market area, independent city, planning region, town, balance of county, statewide, national. else null."},
-                "non_standard_geography": {"type": ["boolean", "null"], "description": "true if the unit has NO clean single BLS/LAUS published series: tribal reservation, sub-city neighborhood/ward, ZIP code, school district, census tract, non-New-England place under 25,000, or a custom/partial-area carve-out. false for standard LAUS units (states/DC/PR; MSAs, metropolitan divisions, micropolitan areas, combined statistical areas, and pre-2025 New England NECTAs; small labor market areas; counties and county-equivalents; cities >=25,000; all New England cities/towns; balance-of-county/state series). See the prompt for the full standard set and the pre-2025 NECTA rule. Default false; null only when the unit text is too illegible to classify."},
-                "non_standard_geography_note": {"type": ["string", "null"], "description": "Short reason when non_standard_geography = true (e.g. 'Navajo Nation reservation', 'portion of city'); else null."},
-                "balance_of_county": {"type": ["boolean", "null"], "description": "true if the unit is the 'balance of' a county — the county minus its separately-listed cities/towns ('Balance of X County', 'remainder of X', 'X County excluding ...'). This is itself a standard LAUS series, so a balance-of-county unit keeps non_standard_geography = false. Default false; null only when the unit text is too illegible to classify."}
+                "orig_text": {
+                  "type": "string",
+                  "description": "The unit EXACTLY as printed, including the trailing type word and any spelling/typo (e.g. 'Eau Claire city', 'Balance of Adams County', 'Bad River Reservation'). Ground-truth anchor for deterministic downstream parsing; never omit."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Core place name with the trailing type word removed (e.g. 'Eau Claire', 'Adams', 'Bad River'). Preserve original spelling, including apparent typos."
+                },
+                "area_type": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Unit type if stated/inferable: county, city, parish, borough, census area, reservation area, LMA/labor market area, independent city, planning region, town, balance of county, statewide, national. else null."
+                },
+                "non_standard_geography": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "true if the unit has NO clean single BLS/LAUS published series: tribal reservation, sub-city neighborhood/ward, ZIP code, school district, census tract, non-New-England place under 25,000, or a custom/partial-area carve-out. false for standard LAUS units (states/DC/PR; MSAs, metropolitan divisions, micropolitan areas, combined statistical areas, and pre-2025 New England NECTAs; small labor market areas; counties and county-equivalents; cities >=25,000; all New England cities/towns; balance-of-county/state series). See the prompt for the full standard set and the pre-2025 NECTA rule. Default false; null only when the unit text is too illegible to classify."
+                },
+                "non_standard_geography_note": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Short reason when non_standard_geography = true (e.g. 'Navajo Nation reservation', 'portion of city'); else null."
+                },
+                "balance_of_county": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "true if the unit is the 'balance of' a county \u2014 the county minus its separately-listed cities/towns ('Balance of X County', 'remainder of X', 'X County excluding ...'). This is itself a standard LAUS series, so a balance-of-county unit keeps non_standard_geography = false. Default false; null only when the unit text is too illegible to classify."
+                },
+                "unemployment_rate": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "This area's OWN unemployment rate as printed for it (percent, e.g. 8.3 not 0.083). Populate whenever the document prints a per-area rate, including inside a joint_aggregate group \u2014 the set's combined rate belongs in local_unemployment.rate_cited, the area's own rate belongs here. Having both is what lets the threshold arithmetic be re-checked downstream. null if no rate is printed for this specific area."
+                },
+                "qualifying_basis": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "own_rate",
+                    "own_designation",
+                    "carried_by_group",
+                    "statewide",
+                    "unknown",
+                    null
+                  ],
+                  "description": "How THIS area qualifies, within its group. own_rate = its own printed rate meets the cited threshold. own_designation = it holds the designation itself (LSA). carried_by_group = it does not meet the threshold alone and rides on the set's combined numbers (only valid inside a joint_aggregate group). statewide = covered by a whole-state qualification. unknown = not determinable. This preserves, at unit level, which members the bundle was actually built to carry."
+                }
               }
             }
           },
-          "group_action": {"type": ["string", "null"], "enum": ["approved", "denied", "rejected", null], "description": "FNS action for this group. Use 'denied'/'rejected' as printed; both map to a not-approved outcome downstream."},
-          "group_action_reason_citation": {"type": ["string", "null"], "description": "Terse primary statute/regulation/authority cited as the reason for this group's action (typically Waiver Response field 8). Most salient/first if several. null if not explicit."},
-
-          "criteria_summary_text": {"type": ["string", "null"], "description": "Brief rationale for this group, e.g. 'UER 20 percent above national average, Jan 2001-Dec 2002' or 'designated Labor Surplus Area'."},
-          "criterion_verbatim": {"type": ["string", "null"], "description": "The exact rule phrase/label the DOCUMENT uses (e.g. 'labor surplus area', '20 percent above the national average', 'extended unemployment benefits', 'ARRA suspension'). Verbatim, before normalization."},
+          "group_action": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "approved",
+              "denied",
+              "rejected",
+              null
+            ],
+            "description": "FNS action for this group. Use 'denied'/'rejected' as printed; both map to a not-approved outcome downstream."
+          },
+          "group_action_reason_citation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Terse primary statute/regulation/authority cited as the reason for this group's action (typically Waiver Response field 8). Most salient/first if several. null if not explicit."
+          },
+          "criteria_summary_text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Brief rationale for this group, e.g. 'UER 20 percent above national average, Jan 2001-Dec 2002' or 'designated Labor Surplus Area'."
+          },
+          "criterion_verbatim": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The exact rule phrase/label the DOCUMENT uses (e.g. 'labor surplus area', '20 percent above the national average', 'extended unemployment benefits', 'ARRA suspension'). Verbatim, before normalization."
+          },
           "criterion_code": {
-            "type": ["string", "null"],
-            "enum": ["pct10_statutory", "pct20_above_natl", "lsa", "eb_trigger", "federal_suspension", "noncontig_1p5x", "other", null],
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "pct10_statutory",
+              "pct20_above_natl",
+              "lsa",
+              "eb_trigger",
+              "federal_suspension",
+              "noncontig_1p5x",
+              "other",
+              null
+            ],
             "description": "Canonical criterion code from the rules KB (0_lit/00_abawd_rules/002_rules_machine.yaml). Classify which qualifying rule the document INVOKES for this group; do not re-derive whether the area truly qualified. pct10_statutory = area rate >10%. pct20_above_natl = 24-mo area rate >=20% above national ('20% Rule'). lsa = DOL-designated Labor Surplus Area. eb_trigger = Extended Benefits / EUC / EUB trigger. federal_suspension = nationwide suspension (ARRA 2009-10, FFCRA 2020-23). noncontig_1p5x = AK/HI statewide >=1.5x national (OBBB 2025+). other = softer insufficient-jobs evidence (low EPOP, declining industry, study). null if indeterminate."
           },
-          "criterion_other_explanation": {"type": ["string", "null"], "description": "Required only when criterion_code = 'other', else null."},
-
-          "soft_criterion_invoked": {"type": ["boolean", "null"], "description": "true if the applicant or FNS invokes a 'softer' insufficient-jobs rationale with no numeric threshold — 'lack of jobs due to lagging job growth', 'lack of jobs in declining occupations or industries', a declining employment-to-population ratio, or a cited study/publication — REGARDLESS of whether a hard criterion (20% rule, LSA, EB) is also present. INDEPENDENT of criterion_code (which stays whatever hard rule was used, or 'other' if the soft rationale is the sole basis). false if only threshold/designation criteria appear; null if the rationale text is absent/illegible."},
-          "soft_criterion_verbatim": {"type": ["string", "null"], "description": "The exact soft-language phrase(s) used. null unless soft_criterion_invoked = true."},
+          "criterion_other_explanation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Required only when criterion_code = 'other', else null."
+          },
+          "soft_criterion_invoked": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "true if the applicant or FNS invokes a 'softer' insufficient-jobs rationale with no numeric threshold \u2014 'lack of jobs due to lagging job growth', 'lack of jobs in declining occupations or industries', a declining employment-to-population ratio, or a cited study/publication \u2014 REGARDLESS of whether a hard criterion (20% rule, LSA, EB) is also present. INDEPENDENT of criterion_code (which stays whatever hard rule was used, or 'other' if the soft rationale is the sole basis). false if only threshold/designation criteria appear; null if the rationale text is absent/illegible."
+          },
+          "soft_criterion_verbatim": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The exact soft-language phrase(s) used. null unless soft_criterion_invoked = true."
+          },
           "data_nonconformance": {
-            "type": ["object", "null"],
+            "type": [
+              "object",
+              "null"
+            ],
             "additionalProperties": false,
             "properties": {
-              "non_bls_source": {"type": ["boolean", "null"], "description": "Unemployment/jobs figures from a source other than BLS (state labor agency, Census, an academic study)."},
-              "seasonally_adjusted": {"type": ["boolean", "null"], "description": "Uses seasonally-adjusted figures (the 2006 guidance requires non-seasonally-adjusted)."},
-              "nonstandard_averaging": {"type": ["boolean", "null"], "description": "Averaging / window / rounding other than the standardized 24-month non-seasonally-adjusted procedure (e.g. 3-month, custom windows, unusual rounding)."},
-              "older_vintage": {"type": ["boolean", "null"], "description": "Explicitly relies on an older BLS data vintage than the current release."},
-              "note": {"type": ["string", "null"], "description": "Brief verbatim support for any flag set."}
+              "non_bls_source": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Unemployment/jobs figures from a source other than BLS (state labor agency, Census, an academic study)."
+              },
+              "seasonally_adjusted": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Uses seasonally-adjusted figures (the 2006 guidance requires non-seasonally-adjusted)."
+              },
+              "nonstandard_averaging": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Averaging / window / rounding other than the standardized 24-month non-seasonally-adjusted procedure (e.g. 3-month, custom windows, unusual rounding)."
+              },
+              "older_vintage": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Explicitly relies on an older BLS data vintage than the current release."
+              },
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Brief verbatim support for any flag set."
+              }
             },
             "description": "Departures from the conforming BLS/LAUS, non-seasonally-adjusted, standardized-averaging norm that the DOCUMENT reveals (FNS often names the departure when rejecting). Set a flag true only on affirmative evidence, false when the conforming practice is shown; leave the whole object null when the document gives no data-methodology detail for this group."
           },
-
           "national_unemployment_rate_cited": {
-            "type": ["object", "null"],
+            "type": [
+              "object",
+              "null"
+            ],
             "additionalProperties": false,
             "properties": {
-              "value": {"type": ["number", "null"], "description": "National unemployment rate cited, as a percent number (e.g. 5.8)."},
-              "text": {"type": ["string", "null"], "description": "Verbatim phrase if not cleanly numeric."},
-              "vintage_or_date_of_data_cited": {"type": ["string", "null"], "description": "YYYY-MM or null."}
+              "value": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "National unemployment rate cited, as a percent number (e.g. 5.8)."
+              },
+              "text": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Verbatim phrase if not cleanly numeric."
+              },
+              "vintage_or_date_of_data_cited": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "YYYY-MM or null."
+              }
             },
             "description": "null when not cited for this group."
           },
           "local_unemployment": {
-            "type": ["object", "null"],
+            "type": [
+              "object",
+              "null"
+            ],
             "additionalProperties": false,
             "properties": {
-              "rate_cited": {"type": ["number", "null"], "description": "Local/area unemployment rate cited, percent number."},
-              "data_source_cited": {"type": ["string", "null"], "description": "e.g. 'BLS LAUS', 'DOL', state agency."},
-              "window_type": {"type": ["string", "null"], "enum": ["24_month_moving_average", "12_consecutive_months", "3_month_average", "other", null]},
-              "start_date": {"type": ["string", "null"], "description": "YYYY-MM or null."},
-              "end_date": {"type": ["string", "null"], "description": "YYYY-MM or null."},
-              "description": {"type": ["string", "null"]},
-              "vintage_or_date_of_data_cited": {"type": ["string", "null"], "description": "YYYY-MM or null (data collection/publication date)."}
+              "rate_cited": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Local/area unemployment rate cited, percent number."
+              },
+              "data_source_cited": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "e.g. 'BLS LAUS', 'DOL', state agency."
+              },
+              "window_type": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "24_month_moving_average",
+                  "12_consecutive_months",
+                  "3_month_average",
+                  "other",
+                  null
+                ]
+              },
+              "start_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "YYYY-MM or null."
+              },
+              "end_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "YYYY-MM or null."
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "vintage_or_date_of_data_cited": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "YYYY-MM or null (data collection/publication date)."
+              }
             },
             "description": "null when no local rate/window is cited for this group."
           },
-
-          "waiver_effective_date": {"type": ["string", "null"], "description": "Granted start. YYYY-MM-DD or null."},
-          "waiver_expiry_date": {"type": ["string", "null"], "description": "Granted end. YYYY-MM-DD or null."},
-          "waiver_duration_text": {"type": ["string", "null"], "description": "Duration text if stated, e.g. '1 year'."},
-          "applied_waiver_start_date": {"type": ["string", "null"], "description": "State-requested start if separately stated. YYYY-MM-DD or null."},
-          "applied_waiver_end_date": {"type": ["string", "null"], "description": "State-requested end if separately stated. YYYY-MM-DD or null."},
-          "applied_waiver_duration_text": {"type": ["string", "null"]}
+          "waiver_effective_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Granted start. YYYY-MM-DD or null."
+          },
+          "waiver_expiry_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Granted end. YYYY-MM-DD or null."
+          },
+          "waiver_duration_text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Duration text if stated, e.g. '1 year'."
+          },
+          "applied_waiver_start_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "State-requested start if separately stated. YYYY-MM-DD or null."
+          },
+          "applied_waiver_end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "State-requested end if separately stated. YYYY-MM-DD or null."
+          },
+          "applied_waiver_duration_text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qualification_level": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "per_unit",
+              "joint_aggregate",
+              "statewide",
+              "unknown",
+              null
+            ],
+            "description": "The level at which qualification was actually EVALUATED for this group's areas \u2014 not how the document phrased them. Answer the counterfactual: if an area were listed alone, would it still qualify under the cited rule? per_unit = yes for every area (the group therefore holds ONE area; six LSA counties = six groups). joint_aggregate = at least one member would fail alone and is carried by the set's combined numbers; the group holds EVERY area the state placed in the set, including those that would have qualified alone. statewide = whole-state qualification with no area test (eb_trigger, federal_suspension, noncontig_1p5x). unknown = genuinely undetermined from this document; do not guess. lsa and pct10_statutory are per_unit by the nature of the rule; pct20_above_natl and other require the evidence tests in 2220b."
+          },
+          "qualification_level_evidence": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why qualification_level was chosen: the verbatim text that decided it, or a one-line statement of the arithmetic performed (e.g. 'Cleveland 6.1 below the printed 6.3 threshold yet approved, so the set must be carrying it'). When qualification_level is 'unknown', state exactly what could not be determined. Required reading for the adjudicator; never leave blank on a judgment call."
+          },
+          "bundle_label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The document's own name for a joint_aggregate set ('70 County Group', 'Advantage West Sub-region 1', 'the Northeast region'). null for per_unit, statewide, or unnamed sets."
+          }
         }
       }
     }

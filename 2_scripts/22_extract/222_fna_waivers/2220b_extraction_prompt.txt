@@ -22,19 +22,127 @@ DOCUMENT STRUCTURE: request_level + groups
 ======================================================================
 - request_level: fields describing the whole request/response (serial number,
   type of request, state, region, the FNS action text, and the form's dates).
-- groups[]: one entry per geographic bundle evaluated under a COMMON action and
-  a COMMON qualifying rule. Each group carries its geographic_units[] plus the
-  rule, evidence, and dates for that bundle.
+- groups[]: one entry per set of areas evaluated TOGETHER under a common rule and
+  a common action. Each group carries its geographic_units[] plus the rule,
+  evidence, and dates for that set.
 
-  SPLITTING RULE: if the request lists many areas but assigns DIFFERENT rules or
-  DIFFERENT actions to different areas, put each rule/action combination in its
-  own group. Example (WI FY2003, serial 2020071): some counties approved as
-  "Labor Surplus Area" and others as "20 percent above national" -> two groups
-  (one lsa group with its counties, one pct20_above_natl group with its
-  counties), even though all share one serial number. If every area shares the
-  same rule and action, one group is fine.
+======================================================================
+HOW THE AREAS WERE EVALUATED (qualification_level)
+======================================================================
+This is the field most often gotten wrong, and the one downstream analysis
+depends on most. Read this section slowly.
 
-  Set request_level.number_of_groups = len(groups).
+Areas printed together in one sentence were NOT necessarily evaluated together.
+A document may list ten counties because they share a rationale, or because the
+state deliberately bundled them so that weak members ride along on the set's
+combined numbers. These are different facts about what the state DID, and the
+document will usually not tell you which one it is. You have to work it out.
+
+The question to answer for every set of areas is a counterfactual:
+
+    IF THIS AREA WERE LISTED BY ITSELF, WOULD IT STILL QUALIFY
+    UNDER THE RULE THE DOCUMENT CITES?
+
+  - Yes for every area in the set   -> per_unit
+  - No for even one area            -> joint_aggregate
+  - The state qualifies as a whole  -> statewide
+  - Cannot be determined            -> unknown
+
+DO NOT look for a sentence that announces the answer. There usually isn't one.
+Reason from the rule and from the numbers.
+
+WHAT THE RULE ITSELF SETTLES. For most criterion codes the answer follows from
+how the rule works, no matter how the sentence is phrased:
+
+  lsa               DOL confers Labor Surplus Area status on an individual area.
+                    One area's designation cannot depend on another's. So "Ashe,
+                    Columbus, Edgecombe, Robeson, Rutherford, Scotland and Vance
+                    ... based on their designation as LSAs" states SEVEN
+                    independent facts, not one joint finding -> per_unit, seven
+                    groups. Note the document says only that they ARE LSAs; it
+                    never says each was designated separately, and it does not
+                    have to. You are expected to know how the rule works.
+  pct10_statutory   The area's own unemployment rate. -> per_unit.
+  eb_trigger        Qualification attaches to the whole state. -> statewide.
+  federal_suspension  Nationwide, no area test. -> statewide.
+  noncontig_1p5x    Statewide rate test. -> statewide.
+  pct20_above_natl  Computable at EITHER level. See below.
+  other             Usually per_unit, but check as for pct20_above_natl.
+
+WHERE THE REAL JUDGMENT LIES: pct20_above_natl (and 'other'). A state may apply
+the 20% test to one county's own rate, or to a combined rate over a set of
+counties. It will often compute the combined figure and simply present the
+result, saying nothing about how it was derived. Weigh the evidence:
+
+  1. STRONGEST: an area whose own printed rate falls BELOW the stated threshold,
+     yet is listed and approved anyway. Nothing but aggregation could have
+     carried it. -> joint_aggregate. Do this arithmetic — compare each printed
+     area rate against the printed threshold — whenever the document gives you
+     both. It is the most reliable signal available and it does not depend on
+     the document explaining itself.
+  2. STRONG: the document treats the set as an object — gives it a name ("the
+     Northeast region", "70 County Group", "seven multi-county areas"), prints a
+     combined labor-force or unemployment total for it, or prints one rate for
+     the set. A state that constructed and named a set was choosing a bundle.
+  3. The document prints a rate for each area, every one clears the threshold,
+     and there is no set-level name or total. -> per_unit.
+  4. None of the above resolves it -> unknown. Say in
+     qualification_level_evidence exactly what you could not determine. Do not
+     guess, and do not default to one group because it is tidier.
+
+  Corroborating (never decisive on its own): areas in a genuine bundle are
+  normally geographically contiguous. A set scattered across opposite ends of
+  the state is more likely a shared rationale than a constructed bundle. If a
+  named set is plainly non-contiguous, keep the set as the document draws it and
+  note the tension in criteria_summary_text.
+
+SCOPE OF A JOINT SET. When a set is joint_aggregate, the group contains EVERY
+area the state placed in it — including areas that would also have qualified on
+their own. Do NOT split a named region into "would have qualified alone" and
+"carried by the group" sub-groups. The state drew that set deliberately, and the
+strong members are precisely what let it include the weak ones; splitting it
+destroys the choice the state actually made.
+
+======================================================================
+SPLITTING RULE
+======================================================================
+Emit a separate group for each distinct combination of:
+  (a) qualifying rule (criterion_code),
+  (b) action (approved / denied / other), and
+  (c) evaluated set.
+
+For per_unit sets, (c) means ONE GROUP PER AREA. Six LSA counties approved
+together = six groups. For joint_aggregate, one group per constructed set; a
+document with seven named multi-county regions has seven groups. For statewide,
+one group.
+
+Still split on rule and action as before: WI FY2003 (serial 2020071) approves
+some counties as Labor Surplus Areas and others under the 20% rule, so those
+never share a group even though they share a serial.
+
+Do NOT create extra groups merely to hold a per-area unemployment rate — that
+belongs on the geographic unit itself (unemployment_rate / qualifying_basis).
+
+DENIED AREAS follow the same logic. A state that requested twenty counties
+individually and had them all turned down yields twenty denied groups, not one:
+the areas were never evaluated as a set. Only when the document denies a
+constructed set AS a set does a denial become a single multi-area group.
+
+BOTH SHAPES ARE COMMON — expect to produce both, sometimes in one document, and
+do not let the group count alarm you:
+  - a document approving 16 Labor Surplus Area counties, 13 counties on their own
+    20%-rule rates, and denying 50 more is 79 groups of one area each;
+  - a document approving one 20-county bundle on the bundle's combined rate is
+    ONE group holding 20 areas.
+A high group count is the correct output for a per_unit document. Never merge
+areas into one group to keep the JSON short.
+
+Record how you decided: put the verbatim text, or a one-line statement of the
+arithmetic you did ("Cleveland 6.1 is below the 6.3 threshold yet approved"),
+into qualification_level_evidence. Put the document's own name for a joint set
+into bundle_label, else null.
+
+Set request_level.number_of_groups = len(groups).
 
 ======================================================================
 CRITERION CLASSIFICATION (canonical codes from the rules KB)

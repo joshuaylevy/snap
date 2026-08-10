@@ -215,6 +215,19 @@ RULE_FAMILY = {
 EXTRA_COLUMNS = [
     "geographic_unit_orig_text",            # unit: verbatim printed string (v1_1)
     "qualifying_rule_family",               # derived from criterion_code
+    # v1_2 bundle semantics: the level at which qualification was EVALUATED. groups[] is
+    # the evaluated SET — a per_unit group holds one area, a joint_aggregate group holds
+    # the whole constructed set — which is the convention the hand-collected sheets
+    # already use (see flatten_to_gold's docstring for the verification). These columns
+    # make the distinction EXPLICIT, which gold leaves implicit in the group sizes: gold
+    # tells you WI FY2003 is 79 singletons, but not that they are singletons because LSA
+    # designations attach per county. qualifying_basis additionally records, per unit,
+    # which members of a joint set were carried by it.
+    "qualification_level",                  # group: per_unit|joint_aggregate|statewide|unknown
+    "qualification_level_evidence",         # group: what decided the call
+    "bundle_label",                         # group: document's own name for a joint set
+    "geographic_unit_unemployment_rate",    # unit: this area's OWN printed rate
+    "geographic_unit_qualifying_basis",     # unit: own_rate|own_designation|carried_by_group|...
     "geographic_unit_non_standard_geography",       # unit flag (v1_1)
     "geographic_unit_non_standard_geography_note",  # unit (v1_1)
     "geographic_unit_balance_of_county",            # unit flag (v1_1)
@@ -263,11 +276,23 @@ def flatten_to_gold(obj: dict, fiscal_year=None) -> list[dict]:
     """One extraction JSON -> list of gold-shaped row dicts (one per group x unit).
 
     approval_criterion is the KB->gold crosswalk of criterion_code; group_action and
-    status are normalized to the gold vocabulary ('denied' -> 'rejected'). number_of_groups
-    and group_id keep the SCHEMA's semantics (group count; 1-based group index) — the gold
-    sheet uses per-unit running counters for those two columns, which we do not reconcile
-    here. 'notes' is gold-side human annotation with no schema source (left null);
-    'fiscal_year' is provenance passed in by the caller, not read from the JSON."""
+    status are normalized to the gold vocabulary ('denied' -> 'rejected').
+
+    number_of_groups and group_id carry the SCHEMA's semantics — group count, and a
+    1-based group index — which is ALSO the hand-collected convention, verified against
+    both sheets on 2026-08-10: gold group_id is a group index, not a per-unit counter
+    (an earlier docstring here claimed otherwise and was wrong). Gold encodes both group
+    shapes, matching the qualification_level distinction in 2220b: WI FY2003 has 79 units
+    in 79 singleton groups (each LSA / 20%-rule / rejected county evaluated on its own),
+    while ND FY2008 has 20 units in ONE group and WI FY2005 has 42 units in 19 groups
+    sized 9/5/4/4/3/2 (genuine joint bundles). So a per_unit group holds one unit and a
+    joint_aggregate group holds the whole constructed set, and the emitted group_id/
+    number_of_groups line up with the gold columns directly.
+
+    number_of_groups is DERIVED as len(groups) rather than taken from the model's
+    self-reported request_level.number_of_groups, so it can never disagree with the
+    group_id values in the same rows. 'notes' is gold-side human annotation with no
+    schema source (left null); 'fiscal_year' is provenance passed in by the caller."""
     rl = obj.get("request_level") or {}
     doc = {
         "fiscal_year": fiscal_year,
@@ -292,7 +317,8 @@ def flatten_to_gold(obj: dict, fiscal_year=None) -> list[dict]:
         "fns_official_name": rl.get("fns_official_name"),
         "fns_official_title": rl.get("fns_official_title"),
         "response_date": rl.get("response_date"),
-        "number_of_groups": rl.get("number_of_groups"),
+        # derived, not rl.get("number_of_groups"): must agree with the group_id column
+        "number_of_groups": len(obj.get("groups") or []),
         "non_conforming_document": rl.get("non_conforming_document"),
         "non_conforming_reason": rl.get("non_conforming_reason"),
         "state_name": rl.get("state_name"),
@@ -317,6 +343,12 @@ def flatten_to_gold(obj: dict, fiscal_year=None) -> list[dict]:
             "geographic_unit_orig_text": (unit or {}).get("orig_text"),
             "approval_criterion": KB_TO_GOLD.get(g.get("criterion_code"), g.get("criterion_code")),
             "qualifying_rule_family": RULE_FAMILY.get(g.get("criterion_code")),
+            # v1_2 bundle semantics (group-level, constant across this group's rows)
+            "qualification_level": g.get("qualification_level"),
+            "qualification_level_evidence": g.get("qualification_level_evidence"),
+            "bundle_label": g.get("bundle_label"),
+            "geographic_unit_unemployment_rate": u.get("unemployment_rate"),
+            "geographic_unit_qualifying_basis": u.get("qualifying_basis"),
             "criterion_other_explanation": g.get("criterion_other_explanation"),
             "criteria_summary_text": g.get("criteria_summary_text"),
             "national_unemployment_rate_cited": _natl_rate_scalar(natl),
