@@ -11,10 +11,13 @@
 renv/**
 
 .env
-# Ignore .claude contents (settings.local.json, etc.) but version the plans so
-# rebuild plans travel with the repo across sessions/machines.
+# Ignore .claude contents (settings.local.json, etc.) but version the pieces
+# that are project infrastructure so they travel with the repo across
+# sessions/machines: rebuild plans, the shared hook config, and the skills.
 .claude/*
 !.claude/plans/
+!.claude/settings.json
+!.claude/skills/
 
 # DATA
 # SNAP ABAWD WAIVERS
@@ -29,11 +32,22 @@ renv/**
 1_data/10_raw/102_fna/1020_timelimit_waiver_docs/**/*.docx
 # FNA application ("State Requests and Data") zips + everything extracted from them.
 1_data/10_raw/102_fna/1023_application_docs/
-# FNA extraction outputs: regenerable model JSONs (Extractor B / pilot runs). Track
-# only the dir via .gitkeep; mirrors the legacy 1001 OpenAI-response convention above.
-1_data/10_raw/102_fna/1022_extractions/**/*.json
+# FNA extraction outputs. Originally ignored as "regenerable", but the NC run-1 vs
+# run-2 replication (2026-08-10) showed agentic extraction is NOT deterministic:
+# independent runs of the same prompt/schema/model differ on transcription (Pasguotank
+# -> Pasquotank) and on judgment calls (FY2013 criterion null vs eb_trigger). Prompt
+# revisions can only be evaluated against a FIXED baseline, so the model JSONs are
+# versioned. The derived flat/comparison CSVs stay ignored -- those ARE deterministic
+# given the JSONs.
+!1_data/10_raw/102_fna/1022_extractions/**/*.json
+1_data/10_raw/102_fna/1022_extractions/*.csv
 
 # SCRIPTS
 # Helper scripts and cache
 2_scripts/22_extract/221_abawd_waivers/__pycache__/
 2_scripts/22_extract/222_fna_waivers/__pycache__/
+
+# WORKLOG (session research record) -- track the CSV database
+# (overriding any global *.csv ignore). Entries are .md and track
+# by default; session-id state lives globally, not in the repo.
+!.worklog/worklog.csv
