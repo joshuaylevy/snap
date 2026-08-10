@@ -106,3 +106,22 @@ fna_panel:
 # Phase 5 -- validate machine panel vs ND/WI hand-collected gold standards
 fna_validate:
 	@echo "[stub] fna_validate: $(222_FNA_WAIVERS)/2225_validate_vs_hand_collected.py not yet implemented"
+# =====================================================================
+# GEO REFERENCE -- state geography context for extraction sub-agents
+# =====================================================================
+
+.PHONY: geo_fetch geo_context
+
+213_GEO := $(21_SCRAPE_DL)/213_geo
+103_RAW_GEO := $(DATA)/10_raw/103_geo
+111_GEO_CONTEXT := $(11_CLEAN)/111_geo_context
+
+# Polite, idempotent download of Census/BLS geographic reference files.
+# Optional subsetting: make geo_fetch GEO_ARGS="--only bls_laus_area"
+geo_fetch:
+	$(CONDA_ACTIVATE) && python $(213_GEO)/2130_download_geo_reference.py $(GEO_ARGS)
+
+# Build per-state agent-facing geography context files (offline; needs geo_fetch once).
+# Optional subsetting: make geo_context GEO_ARGS="--states WI NC"
+geo_context:
+	$(CONDA_ACTIVATE) && python $(213_GEO)/2131_build_geo_context.py $(GEO_ARGS)
