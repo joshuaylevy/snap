@@ -91,10 +91,14 @@ result, saying nothing about how it was derived. Weigh the evidence:
      guess, and do not default to one group because it is tidier.
 
   Corroborating (never decisive on its own): areas in a genuine bundle are
-  normally geographically contiguous. A set scattered across opposite ends of
-  the state is more likely a shared rationale than a constructed bundle. If a
-  named set is plainly non-contiguous, keep the set as the document draws it and
-  note the tension in criteria_summary_text.
+  normally geographically contiguous — since 2016, FNS requires a jointly
+  evaluated group to be contiguous OR to constitute an economic region. Check
+  candidate bundles against the county adjacency lists in the state geography
+  reference file provided with each document instead of guessing from names
+  (sub-county areas: reason via their parent counties). A set scattered across
+  opposite ends of the state is more likely a shared rationale than a
+  constructed bundle. If a named set is plainly non-contiguous, keep the set as
+  the document draws it and note the tension in criteria_summary_text.
 
 SCOPE OF A JOINT SET. When a set is joint_aggregate, the group contains EVERY
 area the state placed in it — including areas that would also have qualified on
@@ -185,7 +189,13 @@ For each geographic unit, emit three name fields and two classification flags.
   spelling/typo (e.g. "Eau Claire city", "Balance of Adams County", "Bad River
   Reservation"). This is the ground-truth anchor; never omit it.
 - name: the core place name with the trailing type word removed ("Eau Claire",
-  "Adams", "Bad River"). Preserve original spelling.
+  "Adams", "Bad River"). Preserve the document's spelling UNLESS it is within a
+  character or two of exactly one name in the state geography reference file —
+  then use the reference spelling here (e.g. printed "Pasguotank" -> name
+  "Pasquotank"; the verbatim print stays in orig_text). Never force a match: if
+  nothing in the reference is close, keep the printed spelling. The reference
+  is a starting point, not an exclusive list — an area's absence from it is not
+  evidence of a transcription error.
 - area_type: the unit type when stated or inferable (county, city, parish, borough,
   census area, reservation area, LMA, independent city, planning region, town,
   balance of county, statewide, national); else null.
