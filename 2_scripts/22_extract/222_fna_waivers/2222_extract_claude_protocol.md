@@ -38,6 +38,13 @@ layer and would defeat a `pdftotext`/text-only API extractor.
 2. **Fan out.** For each not-`[done]` document, spawn one Claude subagent (Agent
    tool, `general-purpose`) with a self-contained task that instructs it to:
    - Read `2220a`, `2220b`, `2220c` (the spec + schema).
+   - Read the state geography reference (the second `READ` path, when the worklist
+     lists one) BEFORE the PDF. Use it to (a) verify name transcriptions — canonical
+     spelling goes in `name`, the verbatim print stays in `orig_text` — and (b) check
+     whether a candidate joint bundle is geographically contiguous via the county
+     adjacency lists. It is a STARTING POINT, not an exclusive list: never discard or
+     "correct away" an area because it is absent. For large states, Grep single
+     adjacency rows instead of re-Reading the whole file.
    - Read the assigned PDF (ALL pages; for >10-page PDFs pass the `pages` range —
      Read caps at 20 pages/request). Treat scanned PDFs as images and transcribe.
    - Produce one JSON object per the schema; apply the **splitting rule** (one

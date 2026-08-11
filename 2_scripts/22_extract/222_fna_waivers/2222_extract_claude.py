@@ -64,6 +64,8 @@ def _worklist(args) -> None:
         flag = "  [done]" if done else ""
         print(f"\n* {r['doc_stub']}{flag}")
         print(f"    READ : {r['source_pdf_path']}")
+        if r.get("geo_context_path"):
+            print(f"    READ : {r['geo_context_path']}    (state geography reference)")
         print(f"    WRITE: {r['out_json_path']}")
 
 

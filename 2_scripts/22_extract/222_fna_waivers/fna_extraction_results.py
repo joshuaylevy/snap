@@ -40,11 +40,43 @@ GOLD_ND = DATA_DIR / "ND-hand-collected.xlsx"
 
 MODEL_TAG = "claude-opus-4-8[1m]"   # in-harness extractor model; part of the run_id
 
-# state name <-> USPS code (only what appears in this corpus is strictly needed;
-# full-ish map kept for robustness)
+# --- state registry ----------------------------------------------------------------
+# Corpus filename codes are lowercase USPS with three warts: 'gu' AND 'guam' both
+# appear (same jurisdiction), 'nyc' is filed separately from 'ny' (kept distinct in
+# the ledger; shares NY's geography context), and 'vi'/'dc' are non-state codes.
 STATE_CODE_TO_NAME = {
-    "WI": "Wisconsin", "NC": "North Carolina", "ND": "North Dakota",
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+    "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware",
+    "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho",
+    "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas",
+    "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
+    "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
+    "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska",
+    "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey",
+    "NM": "New Mexico", "NY": "New York", "NC": "North Carolina",
+    "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon",
+    "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
+    "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah",
+    "VT": "Vermont", "VA": "Virginia", "WA": "Washington",
+    "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming",
+    "DC": "District of Columbia", "GU": "Guam", "VI": "U.S. Virgin Islands",
+    "NYC": "New York City",
 }
+CODE_ALIASES = {"GUAM": "GU"}       # normalize the state_code itself
+CONTEXT_ALIASES = {"NYC": "ny"}     # ledger code -> geo context file stub
+
+GEO_CONTEXT_DIR = DATA_DIR / "11_clean" / "111_geo_context"
+
+
+def geo_context_path(state_code) -> Optional[pathlib.Path]:
+    """Per-state geography reference file for a ledger state_code, or None.
+    NYC resolves to the NY file (its five boroughs are NY counties)."""
+    if not state_code or not isinstance(state_code, str):
+        return None
+    code = CODE_ALIASES.get(state_code.upper(), state_code.upper())
+    stub = CONTEXT_ALIASES.get(code, code.lower())
+    p = GEO_CONTEXT_DIR / f"{stub}_geo_context.md"
+    return p if p.exists() else None
 
 
 # --- identity & run bookkeeping ----------------------------------------------------
@@ -84,8 +116,12 @@ def _fy_from_name(name: str) -> Optional[int]:
 
 
 def _state_from_name(name: str) -> Optional[str]:
-    m = re.match(r"([a-z]{2})-abawd", name, re.IGNORECASE)
-    return m.group(1).upper() if m else None
+    """'wi-abawd-...' -> 'WI'; 'guam-abawd-...' -> 'GU'; 'nyc-abawd-...' -> 'NYC'."""
+    m = re.match(r"([a-z]{2,4})-abawd", name, re.IGNORECASE)
+    if not m:
+        return None
+    code = CODE_ALIASES.get(m.group(1).upper(), m.group(1).upper())
+    return code if code in STATE_CODE_TO_NAME else None
 
 
 def build_worklist(
@@ -119,6 +155,7 @@ def build_worklist(
         batch = pdf.parent.name
         stub = pdf.stem.lower()  # e.g. wi-abawd-response-fy2003
         out_json = root / batch / f"{stub}.json"
+        gcp = geo_context_path(sc)
         rows.append({
             "doc_stub": stub,
             "state_code": sc,
@@ -126,6 +163,7 @@ def build_worklist(
             "batch": batch,
             "source_pdf_path": str(pdf),
             "out_json_path": str(out_json),
+            "geo_context_path": str(gcp) if gcp else "",
         })
     df = pd.DataFrame(rows).drop_duplicates(subset=["source_pdf_path"]).reset_index(drop=True)
     return df
@@ -434,7 +472,7 @@ LEDGER_COLUMNS = [
     "doc_stub", "state_code", "fiscal_year", "batch",
     "source_pdf_path", "response_json_path",
     "n_groups", "n_units", "schema_valid", "schema_errors",
-    "extracted_at", "status",
+    "extracted_at", "status", "geo_context_hash",
 ]
 
 
@@ -505,6 +543,18 @@ def collate_extraction(
         "schema_errors": " | ".join(errs) if errs else None,
         "extracted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "status": status,
+        # sha256 of the state geography context file as of collate time (not proof
+        # of what the agent read; honest-provenance approximation for v1)
+        "geo_context_hash": _geo_context_hash(meta.get("state_code")),
     }
     upsert_ledger_row(row)
     return row
+
+
+def _geo_context_hash(state_code) -> Optional[str]:
+    p = geo_context_path(state_code)
+    if p is None:
+        return None
+    h = hashlib.sha256()
+    h.update(p.read_bytes())
+    return h.hexdigest()
