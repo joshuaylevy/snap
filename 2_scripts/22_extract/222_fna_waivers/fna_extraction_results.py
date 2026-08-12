@@ -563,6 +563,22 @@ LEDGER_COLUMNS = [
 ]
 
 
+def foreign_run_rows(json_paths: Iterable, run_id: str) -> pd.DataFrame:
+    """Ledger rows that already claim these JSON files under a DIFFERENT run_id.
+
+    run_id is derived from the CURRENT spec files, so pointing `collate` at an older
+    arm's --json-root after a spec bump would relabel that arm's JSONs as products of
+    the new spec -- silent, and it survives into every downstream comparison. A run arm
+    writes its own root, so a non-empty result here means the roots got crossed."""
+    if not LEDGER_CSV.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(LEDGER_CSV, dtype=str)
+    if df.empty or "response_json_path" not in df.columns:
+        return pd.DataFrame()
+    want = {str(p) for p in json_paths}
+    return df[df["response_json_path"].isin(want) & (df["run_id"] != run_id)]
+
+
 def upsert_ledger_row(row: dict) -> None:
     """One row per (document_id, extractor, run_id); replaces any existing match."""
     EXTRACT_DIR.mkdir(parents=True, exist_ok=True)

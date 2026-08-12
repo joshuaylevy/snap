@@ -27,13 +27,39 @@ layer and would defeat a `pdftotext`/text-only API extractor.
   group/unit counts, and provenance. `run_id = sha256(instruction + prompt +
   schema + model_tag)`, so re-running with an unchanged spec is idempotent.
 
+## Run arms
+A run arm is `(spec, model, json root)`. `run_id = sha256(instruction + prompt +
+schema + model_tag)` is computed from the spec files **as they are on disk right
+now**, so a prompt edit starts a new arm. The output path is only
+`<root>/<batch>/<stub>.json`, so each arm needs its OWN `--json-root`: re-running in
+place overwrites the previous arm's JSONs, and collating an old root under a new spec
+would relabel that arm's output (the driver refuses this; `--force` overrides).
+
+| arm | root | run_id | model | spec |
+|---|---|---|---|---|
+| opus baseline | `1022_extractions/claude` | `5b2866b2` | `claude-opus-4-8[1m]` | pre-v1_2 |
+| replicate | `1022_extractions/claude_run2` | — | opus | pre-v1_2 |
+| **control** (no geo) | `1022_extractions/claude_v1_2_sonnet` | `01dc7c84` | `claude-sonnet-5` | v1_2, `998db7f` |
+| **treatment** (geo) | `1022_extractions/claude_v1_3_geo` | `904ee8fa` | `claude-sonnet-5` | v1_3, `4809aa1` |
+
+Control vs treatment differ ONLY in the `4809aa1` prompt edit (contiguity checked
+against the adjacency lists; near-miss names resolved to the reference spelling), so
+holding `--model-tag claude-sonnet-5` fixed makes the geography reference the single
+moving part. Gold sheets exist for **WI and ND only** — NC has no gold and can be
+compared run-to-run but never scored.
+
 ## Procedure (per FY-batch / state slice)
-1. **Worklist.** From project root, `snap` env:
+1. **Worklist.** From project root, `snap` env (or `make fna_worklist STATES="WI ND"
+   JSON_ROOT=...`):
    ```
-   python 2_scripts/22_extract/222_fna_waivers/2222_extract_claude.py worklist --states WI NC [--fys 2003 2020 ...]
+   python 2_scripts/22_extract/222_fna_waivers/2222_extract_claude.py worklist \
+       --states WI ND --json-root 1_data/10_raw/102_fna/1022_extractions/claude_v1_3_geo \
+       --model-tag claude-sonnet-5
    ```
    Prints the documents, their `run_id`, and per-document `READ`/`WRITE` paths, and
-   creates the output directories. `[done]` marks docs whose JSON already exists.
+   creates the output directories. `[done]` marks docs whose JSON already exists —
+   note this keys on the file existing, NOT on the run_id, so a fresh arm shows every
+   document as not-done only because its root is empty.
 
 2. **Fan out.** For each not-`[done]` document, spawn one Claude subagent (Agent
    tool, `general-purpose`) with a self-contained task that instructs it to:
@@ -55,20 +81,27 @@ layer and would defeat a `pdftotext`/text-only API extractor.
    Run agents in parallel (batch of ~5–16). Keep the task prompt self-contained;
    subagents inherit no conversation context.
 
-3. **Collate + validate.**
+3. **Collate.** Pass the SAME `--json-root`/`--model-tag` used for the worklist:
    ```
-   python 2_scripts/22_extract/222_fna_waivers/2222_extract_claude.py collate --states WI NC [--fys ...]
+   make fna_collate STATES="WI ND" JSON_ROOT=1_data/10_raw/102_fna/1022_extractions/claude_v1_3_geo
    ```
    Validates each written JSON against `2220c_schema.json`, counts groups/units,
    and upserts the ledger. Re-dispatch agents for any `schema_invalid` / `bad_json`
    / `missing_json` rows, then re-collate.
 
-4. **Validate vs gold (WI/ND pilot years).**
+4. **Validate vs gold (WI/ND only).**
    ```
-   python 2_scripts/22_extract/222_fna_waivers/2225_validate_vs_hand_collected.py --state WI --fys 2003 2008 2020
+   make fna_validate STATE=WI JSON_ROOT=1_data/10_raw/102_fna/1022_extractions/claude_v1_3_geo
    ```
-   Reports name-matched units and criterion/action agreement per FY, with a
-   disagreement table for joint review with Josh.
+   Reports name-matched units and criterion/action agreement per FY on three matching
+   bases (`exact` / `gold_repaired` / `canonical` — see the `2225` docstring), with the
+   typo repairs listed and a disagreement table for joint review with Josh.
+
+   The gold sheets carry their own typos, so `exact` understates any extraction that
+   spells correctly; `gold_repaired` is the basis on which the geography reference is
+   fairly scored. Note the unit-level comparison flattens away `groups[]`, so bundling
+   — the channel the adjacency lists actually drive — is not scored here; gold does
+   carry `group_id` and `number_of_groups` if that metric is wanted later.
 
 ## Notes / conventions
 - **Adversarial cross-check (later):** Extractor A (OpenAI) emits the same schema;

@@ -71,7 +71,8 @@ openai_abawd_waivers_subset:
 # openai_abawd_waivers pipeline above remains the working path in the meantime.
 # =====================================================================
 
-.PHONY: fna_recon fna_download fna_inventory fna_extract fna_panel fna_validate
+.PHONY: fna_recon fna_download fna_inventory fna_worklist fna_collate fna_status \
+        fna_extract fna_panel fna_validate
 
 # FNA folder variables (numbered tree mirrors the target architecture)
 LIT := 0_lit
@@ -95,9 +96,36 @@ fna_download:
 fna_inventory:
 	@echo "[stub] fna_inventory: $(212_FNA_TIMELIMIT)/2122_make_document_inventory.py not yet implemented"
 
-# Phase 3 -- hybrid adversarial extraction (OpenAI + Claude) + adjudication
-fna_extract:
-	@echo "[stub] fna_extract: $(222_FNA_WAIVERS)/2221-2223 not yet implemented"
+# Phase 3 -- Claude in-harness extraction. fna_worklist prints the per-document agent
+# assignments (each with its state geography reference); the fan-out itself is driven
+# by a Claude session, see 2222_extract_claude_protocol.md. fna_collate validates the
+# written JSONs into the ledger.
+#
+# A run arm = (spec, model, json root). ALWAYS pass the same JSON_ROOT/MODEL_TAG to
+# worklist and collate, and point a new spec at a NEW root -- the output path is just
+# <root>/<batch>/<stub>.json, so re-running in place silently overwrites the older arm.
+#   make fna_worklist STATES="WI ND" JSON_ROOT=$(1022_EXTRACTIONS)/claude_v1_3_geo
+#   make fna_collate  STATES="WI ND" JSON_ROOT=$(1022_EXTRACTIONS)/claude_v1_3_geo
+# JSON_ROOT is shared with fna_validate, so the same override scores what you just ran.
+1022_EXTRACTIONS := $(102_RAW_FNA)/1022_extractions
+STATES ?= WI ND
+MODEL_TAG ?= claude-sonnet-5
+JSON_ROOT ?= $(1022_EXTRACTIONS)/claude
+FNA_EXTRACT_ARGS = --states $(STATES) --json-root $(JSON_ROOT) --model-tag $(MODEL_TAG) $(FNA_ARGS)
+
+fna_worklist:
+	$(CONDA_ACTIVATE) && python $(222_FNA_WAIVERS)/2222_extract_claude.py worklist $(FNA_EXTRACT_ARGS)
+
+fna_collate:
+	$(CONDA_ACTIVATE) && python $(222_FNA_WAIVERS)/2222_extract_claude.py collate $(FNA_EXTRACT_ARGS)
+
+fna_status:
+	$(CONDA_ACTIVATE) && python $(222_FNA_WAIVERS)/2222_extract_claude.py status --states $(STATES)
+
+fna_extract: fna_worklist
+	@echo ""
+	@echo "Fan out one Claude subagent per not-[done] document above, then:"
+	@echo "  make fna_collate STATES=\"$(STATES)\" JSON_ROOT=$(JSON_ROOT) MODEL_TAG=$(MODEL_TAG)"
 
 # Phase 4 -- build waiver-unit and state-year application panels
 fna_panel:
@@ -107,10 +135,9 @@ fna_panel:
 # Gold sheets exist for WI and ND ONLY; there is no NC gold, so NC can be compared
 # run-to-run but never scored against gold.
 #   make fna_validate STATE=WI FYS="2003 2008 2020"
-#   make fna_validate STATE=ND FYS="2020 2021" JSON_ROOT=$(102_RAW_FNA)/1022_extractions/claude_v1_3_geo
+#   make fna_validate STATE=ND FYS="2020 2021" JSON_ROOT=$(1022_EXTRACTIONS)/claude_v1_3_geo
 STATE ?= WI
 FYS ?= 2002 2003 2004 2005 2006 2007 2008 2009 2011 2012 2013 2015 2020 2021 2022 2024 2025
-JSON_ROOT ?= $(102_RAW_FNA)/1022_extractions/claude
 fna_validate:
 	$(CONDA_ACTIVATE) && python $(222_FNA_WAIVERS)/2225_validate_vs_hand_collected.py \
 		--state $(STATE) --fys $(FYS) --json-root $(JSON_ROOT)

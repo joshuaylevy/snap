@@ -75,6 +75,23 @@ def _collate(args) -> None:
         print("No matching response PDFs.", file=sys.stderr)
         return
     run_id = R.compute_run_id(model_tag=args.model_tag)
+
+    # Guard the crossed-roots mistake: these JSONs are already in the ledger under a
+    # different spec, so collating them here would relabel another arm's output as
+    # this spec's. Re-collating the SAME arm is unaffected (same run_id).
+    clash = R.foreign_run_rows(wl["out_json_path"], run_id)
+    if not clash.empty and not args.force:
+        print(f"REFUSING: {len(clash)} of these JSONs are already recorded under a "
+              f"different run_id.\nThis run_id is {R.run_short(run_id)} "
+              f"(model={args.model_tag}); the files on disk were collated as:",
+              file=sys.stderr)
+        for rs, grp in clash.groupby("run_short"):
+            print(f"  {rs}  model={grp['model_tag'].iloc[0]}  n={len(grp)}  "
+                  f"e.g. {grp['response_json_path'].iloc[0]}", file=sys.stderr)
+        print("\nPoint --json-root at THIS arm's own directory, or pass --force if you "
+              "really mean to re-attribute them.", file=sys.stderr)
+        sys.exit(1)
+
     rows = []
     for _, r in wl.iterrows():
         meta = {k: r[k] for k in ("doc_stub", "state_code", "fiscal_year", "batch")}
@@ -128,6 +145,10 @@ def main() -> None:
             sp.add_argument("--model-tag", default=R.MODEL_TAG,
                             help=f"model tag recorded in the ledger and hashed into "
                                  f"the run_id (default {R.MODEL_TAG})")
+        if name == "collate":
+            sp.add_argument("--force", action="store_true",
+                            help="collate even when these JSONs are already recorded "
+                                 "under a different run_id (re-attributes them)")
         sp.set_defaults(func=fn)
     args = ap.parse_args()
     args.func(args)
