@@ -38,6 +38,7 @@ Run from project root, `snap` env:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import pathlib
 import re
@@ -229,7 +230,21 @@ def main() -> None:
     args = ap.parse_args()
 
     json_root = pathlib.Path(args.json_root)
-    gold = pd.read_excel(GOLD_XLSX[args.state.upper()])
+    gold_path = GOLD_XLSX[args.state.upper()]
+    gold = pd.read_excel(gold_path)
+
+    # Provenance header. The gold sheets are hand-maintained and NOT under version
+    # control (*.xlsx is gitignored), so a result is only interpretable against a
+    # known sheet version -- print its content hash the way document_id / run_id /
+    # geo_context_hash pin the rest of the pipeline.
+    gold_sha = hashlib.sha256(gold_path.read_bytes()).hexdigest()
+    print(f"gold  : {gold_path}  sha256={gold_sha[:8]}  rows={len(gold)}")
+    print(f"ext   : {json_root}")
+    blank_fy = int(gold["fiscal_year"].isna().sum())
+    if blank_fy:
+        print(f"  WARNING: {blank_fy} gold rows have a blank fiscal_year and are "
+              f"invisible to every per-FY comparison below.")
+
     for fy in args.fys:
         res = compare_fy(args.state.upper(), fy, gold, json_root)
         print("=" * 70)

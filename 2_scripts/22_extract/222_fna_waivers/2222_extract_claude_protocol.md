@@ -97,11 +97,43 @@ compared run-to-run but never scored.
    bases (`exact` / `gold_repaired` / `canonical` — see the `2225` docstring), with the
    typo repairs listed and a disagreement table for joint review with Josh.
 
-   The gold sheets carry their own typos, so `exact` understates any extraction that
-   spells correctly; `gold_repaired` is the basis on which the geography reference is
-   fairly scored. Note the unit-level comparison flattens away `groups[]`, so bundling
-   — the channel the adjacency lists actually drive — is not scored here; gold does
-   carry `group_id` and `number_of_groups` if that metric is wanted later.
+   Note the unit-level comparison flattens away `groups[]`, so bundling — the channel
+   the adjacency lists actually drive — is not scored here; gold does carry `group_id`
+   and `number_of_groups` if that metric is wanted later.
+
+### Gold provenance
+The sheets are hand-maintained and `*.xlsx` is gitignored, so gold is **not under
+version control**: a result is only interpretable against a stated sheet version, and
+`2225` prints `sha256`/row count on every run for that reason. Josh hand-cleaned both
+sheets on 2026-08-11 (`WI sha256=b4aca656`, 313 rows; `ND sha256=65d0f1db`, 145 rows),
+fixing six transcription typos (`Milwakuee`→Milwaukee ×8 rows FY2002–07, `Onconto`,
+`Richalnd`, `Waukeshaw`, `Kkidder`, `Nel`→Nelson), a trailing space, a `Lac Du/du
+Flambeau` case split, and — the big one — 19 WI rows whose blank `fiscal_year` hid the
+FY2025 record's groups 2–17, so FY2025 read as 1 unit instead of 20.
+
+Consequences for reading any comparison: `exact` and `gold_repaired` should now be
+IDENTICAL (no gold typos left to repair) — if they ever diverge again, a typo has crept
+back into the sheet, which makes that pair a standing regression check. WI gold rose
+from 281 to 298 scoreable units. Two known gaps remain and are NOT typos: 46 WI rows
+have a blank `group_action` (FY2008 all 41, 2013, 2015, 2020) — and for FY2008 the
+extraction is null too, so that year's "action" agreement is two blanks agreeing rather
+than a verified match; and WI FY2003's `Sokagoan` plus FY2025's `Flambeau` are faithful
+transcriptions of what the documents print, not errors to fix.
+
+### Control baseline (arm 01dc7c84, scored against the cleaned gold)
+| state | basis | name | action | criterion |
+|---|---|---|---|---|
+| WI | exact / gold_repaired | 294/298 (98.7%) | 98.0% | 99.5% |
+| WI | canonical | 295/298 (99.0%) | 98.0% | 99.5% |
+| ND | exact / gold_repaired | 135/136 (99.3%) | 98.5% | 97.8% |
+| ND | canonical | 136/136 (100%) | 98.5% | 97.8% |
+
+The gap between `exact` and `canonical` is now entirely extraction-side spelling —
+`layfayette` (WI FY2003), `pembia` (ND FY1998), `rollette` (ND FY2014). Those three are
+the concrete errors the geography reference is supposed to remove, and they are worth
++1 matched unit in each state. That is the whole name-channel headroom: criterion and
+action are already ≥98%, so a treatment effect has to show up in bundling, which this
+report does not score.
 
 ## Notes / conventions
 - **Adversarial cross-check (later):** Extractor A (OpenAI) emits the same schema;
