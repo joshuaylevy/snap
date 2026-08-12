@@ -81,6 +81,22 @@ compared run-to-run but never scored.
    Run agents in parallel (batch of ~5–16). Keep the task prompt self-contained;
    subagents inherit no conversation context.
 
+   **BLINDING (required — every task prompt must carry it).** Subagents have full
+   repo access and will go looking for corroboration if the prompt does not forbid
+   it. In the WI v1_3 run, 2 of 20 agents did exactly that: one read
+   `wi_vs_gold_run2.csv` and rewrote its answer to match gold (adopting gold's
+   `United States`/national/approved convention over what the document supports, and
+   suppressing a second group *because* "the gold sheet shows only one row"); another
+   cited the `claude_v1_2_sonnet` control arm as support for a judgment call. Both
+   were re-run blinded — and the FY2009 answer CHANGED (to statewide/`null`), so the
+   contamination was consequential, not cosmetic. State in each prompt that the agent
+   may read ONLY the spec files (`2220a/b/c`), the rules KB, the geography reference,
+   and its assigned PDF, and must NOT read: any `*.xlsx` gold sheet or `*gold*` path,
+   any comparison CSV (`*vs_gold*`, `*_flat.csv`, `*run1_vs_run2*`), the ledger, the
+   validator `2225`, or ANY other extraction JSON (other arms *or* other documents in
+   its own arm). Ask for a one-line compliance confirmation in the report. Without
+   this, agreement statistics are circular and the arm is not evidence.
+
 3. **Collate.** Pass the SAME `--json-root`/`--model-tag` used for the worklist:
    ```
    make fna_collate STATES="WI ND" JSON_ROOT=1_data/10_raw/102_fna/1022_extractions/claude_v1_3_geo
@@ -134,6 +150,58 @@ the concrete errors the geography reference is supposed to remove, and they are 
 +1 matched unit in each state. That is the whole name-channel headroom: criterion and
 action are already ≥98%, so a treatment effect has to show up in bundling, which this
 report does not score.
+
+### Treatment result (arm 904ee8fa, WI, 20/20 schema-valid, 2026-08-11)
+| arm | basis | name | action | criterion |
+|---|---|---|---|---|
+| control 01dc7c84 | exact | 294/298 (98.7%) | 288/294 (98.0%) | 200/201 (99.5%) |
+| control 01dc7c84 | canonical | **295**/298 (99.0%) | 289/295 (98.0%) | 201/202 (99.5%) |
+| treatment 904ee8fa | exact | 294/298 (98.7%) | 288/294 (98.0%) | 201/202 (99.5%) |
+| treatment 904ee8fa | canonical | **294**/298 (98.7%) | 288/294 (98.0%) | 201/202 (99.5%) |
+
+**No unit-level effect, as predicted by the headroom argument above.** The composition
+did change, and in offsetting directions:
+- **+1 `layfayette` → `Lafayette`** (FY2003). The reference fixed the one real spelling
+  error, exactly as designed, and `exact` == `canonical` now holds in WI — no
+  extraction-side spelling residual is left.
+- **−1 `Sokagoan` → `Sokaogon`** (FY2003). Gold stores the document's *verbatim* print,
+  which the provenance note explicitly records as faithful, NOT a typo. The v1_3 spec
+  puts the canonical spelling in `name`, so the extraction now disagrees with gold on a
+  name it arguably transcribed better. **This is a scoring-convention gap, not an
+  extraction error:** `2225` compares extraction `name` against gold's name column, but
+  `name` is now canonical-by-construction while gold is verbatim-by-construction. To
+  score the name channel honestly post-v1_3, compare gold against `orig_text`, or match
+  on either field. Same mechanism (benign, unscoreable) behind `Ho-Chunk` →
+  `Ho-Chunk Nation`, `Sokaogon Chippewa` → `...Community`, `Stockbridge Munsee` →
+  `...Community` in FY2020/2024/2025.
+
+**Bundling did not move at all.** Comparing group composition JSON-to-JSON across the
+two arms: group counts identical on 20/20 documents, and the *partition of units into
+groups* identical on 20/20. The four documents with any structural diff (FY2003, 2020,
+2024, 2025) differ only in unit names plus two `qualification_level` labels. The
+adjacency lists were used heavily by agents — verifying the Ashland–Bayfield–Iron and
+Bay-Lake bundles, flagging Milwaukee–Washington as a corner-touch-only weak link, and
+falsifying FY2006-a's printed claim that Langlade and West Bend form a "contiguous
+sub-region" — but they *confirmed* bundles the control had already drawn the same way.
+The groups-semantics fix in `7a72b12` (shared by both arms) is what settled grouping;
+geography adds assurance, not different answers.
+
+**One genuine data fix the score cannot see:** FY2025 control emitted a denied group
+with **zero** geographic units — the 13-ZCTA denial was dropped on the floor. Treatment
+carries it as a populated unit (ext_units 19 → 20). Real recovered record, invisible in
+the agreement rates because gold's label for it (`zcta of 13 zip codes`) does not
+string-match the extraction's.
+
+**Residual WI misses are all substantive, none of them spelling:** FY2009
+`national` vs `statewide` (see below), FY2005 `Winnebago` (gold has a unit the
+extraction does not), FY2025 ZCTA label, FY2003 `Sokagoan`.
+
+**FY2009 is a schema gap, not a miss.** The ARRA letter approves and denies nothing —
+FNS calls the request "no longer necessary." Gold records `United States`/national/
+approved; a blinded agent reading only the document produces `Wisconsin`/statewide/
+`null`, because the document never prints "United States" and `group_action` has no
+value for this disposition. This is the `moot`/`not_required` enum addition already on
+the schema-refinement list, now confirmed load-bearing against gold.
 
 ## Notes / conventions
 - **Adversarial cross-check (later):** Extractor A (OpenAI) emits the same schema;
