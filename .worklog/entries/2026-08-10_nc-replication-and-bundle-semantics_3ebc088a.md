@@ -7,8 +7,8 @@ status: wip
 phase: Phase 3
 tags: [abawd, fna, extraction, prompt-engineering, replication, schema, nc]
 branch: fna_rebuild
-head_commit: cce8239
-commits: [cce8239]
+head_commit: 7a72b12
+commits: [cce8239, 7a72b12]
 transcript_path: /Users/joshuaylevy/.claude/projects/-Users-joshuaylevy-Documents-Work-USC-snap/3ebc088a-9af6-49c0-8d91-4f494c430d98.jsonl
 ---
 
@@ -119,7 +119,7 @@ Committed in `cce8239`:
 - `1_data/10_raw/102_fna/1022_extractions/claude_run2/**` (31 JSONs) — WI + new NC run 2.
 - `.claude/settings.json`, `.worklog/**` — per the existing .gitignore intent.
 
-Uncommitted at time of writing (the v1_2 semantics change):
+Committed in `7a72b12` (the v1_2 semantics change):
 - `2_scripts/22_extract/222_fna_waivers/2220b_extraction_prompt.txt` — replaced the
   splitting rule with the counterfactual test, rule-driven defaults, the arithmetic
   evidence test for pct20, joint-set scope rule, denied-area rule, and an explicit
