@@ -6,6 +6,35 @@ scalars and [] for empty lists. Never invent values; if the document does not
 state something, use null.
 
 ======================================================================
+SOURCES YOU MAY USE (BLINDING — READ THIS FIRST)
+======================================================================
+Base EVERY extraction and classification decision ONLY on:
+  (1) this prompt, 2220a, and the schema 2220c_schema.json;
+  (2) the rules KB at 0_lit/00_abawd_rules/;
+  (3) the state geography reference you were given, if any;
+  (4) the single source document you were assigned.
+
+You MUST NOT open, read, grep, list, or otherwise consult ANY other file when
+deciding what to extract. Specifically forbidden:
+  - hand-collected "gold" spreadsheets (any *.xlsx under 1_data/, any path
+    containing "gold" or "hand_collected");
+  - comparison / validation / flattened CSVs (*vs_gold*, *_flat.csv,
+    *run1_vs_run2*, and the extraction ledger 10220_extraction_results.csv);
+  - the validator script 2225_validate_vs_hand_collected.py;
+  - ANY other extraction JSON — from an earlier run, another model, another
+    arm, or another document in your own run.
+
+These extractions are scored against an independent hand-collected standard.
+An extraction that was reconciled against that standard, or against another
+agent's output, is worthless as evidence even when it is correct — the
+agreement statistic it feeds becomes circular. Never reason "a previous run
+did X, so I should do X," and never adjust a group count, a name, or an action
+to match something you saw elsewhere. Where this prompt genuinely
+underdetermines a call, decide from the document and record your reasoning in
+the relevant evidence/text field. Disagreement that survives is the signal;
+manufactured agreement destroys it.
+
+======================================================================
 WHAT THESE DOCUMENTS ARE
 ======================================================================
 A state SNAP agency asks FNS/FNA to waive the ABAWD work-time-limit (the 3-in-36
@@ -180,6 +209,53 @@ Guidance:
   OBBB (2025) repeal; federal_suspension only in the ARRA and FFCRA windows;
   noncontig_1p5x only FY2026+. If a document invokes a rule outside its window,
   extract what it says and note the tension.
+
+======================================================================
+FEDERAL SUSPENSION WINDOWS: how to code action and scope
+======================================================================
+During a nationwide statutory suspension the ABAWD time limit is not in force
+anywhere, so the state IS covered for that period no matter what it asked for
+or how FNS worded its reply. The authoritative windows (rules KB, 002_rules_machine):
+
+    ARRA    P.L. 111-5, sec 101(e)     2009-04-01  ->  2010-09-30
+    FFCRA   P.L. 116-127, sec 2301     2020-04-01  ->  2023-06-30
+
+  FFCRA's end date is tied to the public health emergency. Do NOT substitute the
+  CAA-2023 cutoff (emergency ALLOTMENTS ended after Feb 2023 under FFCRA sec 2302)
+  — that is a different provision and does not end the ABAWD suspension.
+
+This is a general rule, not a fact about one fiscal year: it applies to ANY state
+and ANY document whose fiscal year overlaps either window (ARRA reaches FY2009 AND
+FY2010; FFCRA reaches FY2020 through FY2023).
+
+When a document's disposition rests on such a suspension (criterion_code =
+federal_suspension), code the group as:
+
+    group_action         "approved"        <- NOT null
+    qualification_level  "statewide"
+    geographic_units     exactly ONE unit: the STATE itself
+                         name      = the state's own name (e.g. "Wisconsin")
+                         area_type = "statewide"
+
+Two traps this exists to prevent:
+
+1. FNS letters in these windows routinely APPROVE AND DENY NOTHING — they say the
+   request is "no longer necessary", moot, or superseded, because the statute has
+   already done the work. Do not read that as absence of coverage and do not leave
+   group_action null. The operative fact is that the state's ABAWDs are time-limit
+   free for the window. Record "approved", and preserve FNS's actual wording
+   verbatim in action_reason_approval_denial and criteria_summary_text so the
+   "no longer necessary" character of the decision is not lost.
+
+2. The suspension is nationwide, but DO NOT name the unit "United States" or set
+   area_type "national". These records are assembled into a state-by-state panel;
+   emit one statewide row under the state's own name. The nationwide scope belongs
+   in criteria_summary_text / qualification_level_evidence, not in the unit name.
+
+If the document ALSO narrates a separate qualifying route (e.g. the state was
+independently EB-trigger eligible but did not pursue it), that is context, not a
+second group: keep it in criteria_summary_text unless FNS took a distinct action
+on it.
 
 ======================================================================
 GEOGRAPHIC UNITS: name / area_type / orig_text + BLS-LAUS classification

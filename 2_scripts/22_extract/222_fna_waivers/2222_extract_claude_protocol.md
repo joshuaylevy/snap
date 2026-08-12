@@ -41,6 +41,14 @@ would relabel that arm's output (the driver refuses this; `--force` overrides).
 | replicate | `1022_extractions/claude_run2` | — | opus | pre-v1_2 |
 | **control** (no geo) | `1022_extractions/claude_v1_2_sonnet` | `01dc7c84` | `claude-sonnet-5` | v1_2, `998db7f` |
 | **treatment** (geo) | `1022_extractions/claude_v1_3_geo` | `904ee8fa` | `claude-sonnet-5` | v1_3, `4809aa1` |
+| **v1_4** (geo + blinding + fed-suspension) | `1022_extractions/claude_v1_4_fedsusp` | `3c73108d` | `claude-sonnet-5` | v1_4 |
+
+**All JSONs from the arms above were deleted from the working tree (2026-08-12, Josh's
+call) so that future extraction agents cannot read a prior arm's output. They remain in
+git history — `git log --diff-filter=D --stat -- '1_data/10_raw/102_fna/1022_extractions'`
+finds the deletion commit, and `git show <commit>^:<path>` recovers any file. The
+gitignored comparison CSVs and the ledger were NOT recoverable and are gone for good;
+the ledger rebuilds from `collate`. Gold `.xlsx` untouched. v1_4 has not been run yet.**
 
 Control vs treatment differ ONLY in the `4809aa1` prompt edit (contiguity checked
 against the adjacency lists; near-miss names resolved to the reference spelling), so
