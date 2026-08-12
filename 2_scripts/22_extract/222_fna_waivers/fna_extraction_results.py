@@ -79,6 +79,93 @@ def geo_context_path(state_code) -> Optional[pathlib.Path]:
     return p if p.exists() else None
 
 
+# --- geographic name vocabulary (for validation, NOT for extraction) ----------------
+# The per-state reference file is written for agents to READ; these helpers let the
+# validator use the SAME vocabulary programmatically, so a name typo can be told apart
+# from a substantive disagreement. Sections skipped: the prose preamble and the change
+# log (neither is a name list).
+_GEO_SKIP_SECTIONS = ("how to use", "changes to", "new york city")
+
+
+def geo_reference_names(state_code) -> set[str]:
+    """Every place name the state's geography reference lists: counties / county-
+    equivalents, planning regions and legacy counties (CT), LAUS cities, New England
+    cities and towns, and tribal areas. Display spelling, type words intact
+    ('Apex town'); callers normalize."""
+    p = geo_context_path(state_code)
+    if p is None:
+        return set()
+    names: set[str] = set()
+    section = ""
+    for line in p.read_text(encoding="utf-8").splitlines():
+        if line.startswith("## "):
+            section = line[3:].strip().lower()
+            continue
+        if not section or section.startswith(_GEO_SKIP_SECTIONS):
+            continue
+        s = line.strip()
+        if not s or s.startswith("Grouped by county") or s.startswith("Documents usually"):
+            continue
+        if s.startswith("|"):                       # markdown table -> first column
+            cells = [c.strip() for c in s.strip("|").split("|")]
+            head = cells[0] if cells else ""
+            if not head or set(head) <= set("-: "):          # separator row
+                continue
+            if head.lower().startswith(("name", "city", "county", "region")):
+                continue                                      # header row
+            names.add(head)
+        elif s.startswith("- ") and ":" in s:        # NE towns grouped by county
+            names.update(t.strip() for t in s.split(":", 1)[1].split(","))
+        elif "adjacency" in section and ":" in s:    # 'Alamance: Caswell, Chatham, ...'
+            names.add(s.split(":", 1)[0].strip())
+        elif "tribal" in section or "american indian" in section:
+            names.update(t.strip() for t in s.split(","))
+    return {n for n in names if n}
+
+
+def _levenshtein(a: str, b: str) -> int:
+    """Plain DP edit distance. Inputs here are short normalized place keys."""
+    if a == b:
+        return 0
+    if not a or not b:
+        return len(a) or len(b)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+# a key must be at least this long before we will edit-distance it to a reference name;
+# below it, 2 edits can turn one real short name into a different real short name.
+GEO_MIN_FUZZY_LEN = 5
+GEO_MAX_EDITS = 2
+
+
+def resolve_geo_typo(key: str, ref_keys: Iterable[str]) -> Optional[str]:
+    """Map a normalized place key onto a reference key when it is a near-miss for
+    EXACTLY ONE of them -- the same rule 2220b gives the extraction agents ('within a
+    character or two of exactly one name'). Returns None when the key is already exact,
+    is too short to risk fuzzing, or is ambiguous (ties are never resolved)."""
+    ref = set(ref_keys)
+    if not key or key in ref or len(key) < GEO_MIN_FUZZY_LEN:
+        return None
+    best_d, best = GEO_MAX_EDITS + 1, []
+    for r in ref:
+        if abs(len(r) - len(key)) > GEO_MAX_EDITS:
+            continue
+        d = _levenshtein(key, r)
+        if d < best_d:
+            best_d, best = d, [r]
+        elif d == best_d:
+            best.append(r)
+    if best_d <= GEO_MAX_EDITS and len(best) == 1:
+        return best[0]
+    return None
+
+
 # --- identity & run bookkeeping ----------------------------------------------------
 def document_id(pdf_path: pathlib.Path) -> str:
     """SHA256 of the PDF file CONTENT (not path). Dedupes identical files across FY pages."""

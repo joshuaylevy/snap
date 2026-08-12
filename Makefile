@@ -103,9 +103,17 @@ fna_extract:
 fna_panel:
 	@echo "[stub] fna_panel: $(222_FNA_WAIVERS)/2224_build_waiver_panel.py not yet implemented"
 
-# Phase 5 -- validate machine panel vs ND/WI hand-collected gold standards
+# Phase 5 -- validate extractions vs the ND/WI hand-collected gold standards.
+# Gold sheets exist for WI and ND ONLY; there is no NC gold, so NC can be compared
+# run-to-run but never scored against gold.
+#   make fna_validate STATE=WI FYS="2003 2008 2020"
+#   make fna_validate STATE=ND FYS="2020 2021" JSON_ROOT=$(102_RAW_FNA)/1022_extractions/claude_v1_3_geo
+STATE ?= WI
+FYS ?= 2002 2003 2004 2005 2006 2007 2008 2009 2011 2012 2013 2015 2020 2021 2022 2024 2025
+JSON_ROOT ?= $(102_RAW_FNA)/1022_extractions/claude
 fna_validate:
-	@echo "[stub] fna_validate: $(222_FNA_WAIVERS)/2225_validate_vs_hand_collected.py not yet implemented"
+	$(CONDA_ACTIVATE) && python $(222_FNA_WAIVERS)/2225_validate_vs_hand_collected.py \
+		--state $(STATE) --fys $(FYS) --json-root $(JSON_ROOT)
 # =====================================================================
 # GEO REFERENCE -- state geography context for extraction sub-agents
 # =====================================================================

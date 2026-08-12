@@ -9,6 +9,20 @@ reports agreement per fiscal year:
   * document-level: serial number, type_of_request, document_type, group/unit counts
   * unit-level: name-matched units, and among matches, criterion + action agreement
 
+Unit names are matched on THREE bases, because the hand-collected sheets carry their
+own transcription typos (WI "Milwakuee"/"Onconto"/"Richalnd"/"Waukeshaw", ND "Kkidder").
+Under exact matching those units can never match a correctly-spelled extraction, which
+would score the state geography reference DOWN for doing its job:
+  exact          both sides as written. Comparable with pre-geo-context runs.
+  gold_repaired  gold typos snapped to the reference vocabulary, extraction left as
+                 written. The treatment channel: rewards an extraction that spells
+                 canonically, still penalizes one that does not.
+  canonical      both sides snapped. Spelling reconciled, so residual disagreement is
+                 substantive (which units, what criterion/action).
+Every repair is printed, and a near-miss is only ever snapped when it is within two
+edits of EXACTLY ONE reference name (R.resolve_geo_typo -- the same rule 2220b gives
+the extraction agents). Detail lines are reported on the canonical basis.
+
 Extractions are flattened via the SHARED canonical flattener (R.flatten_to_gold),
 so the extraction side already carries the gold column vocabulary (approval_criterion,
 group_action normalized to approved/rejected). The KB->gold criterion crosswalk lives
@@ -42,14 +56,14 @@ GOLD_XLSX = {"WI": R.GOLD_WI, "ND": R.GOLD_ND}
 _TYPE_TOKENS = {
     "county", "city", "reservation", "parish", "borough", "community",
     "area", "town", "village", "indian", "tribe", "band", "nation", "colony",
-    "wi", "nc", "nd",   # trailing state code (whole-word "Wisconsin" handled by _ALIAS)
+    "wi", "nc", "nd",   # trailing state code (whole-word state names -> _state_alias)
 }
 # connector words: truncate the name at the first one ("Beloit City in Rock" -> "Beloit City";
 # "Chippewa less Eau Claire" -> "Chippewa")
 _CONNECTORS = {"in", "less", "part", "portion", "excluding", "minus"}
-# canonical aliases for whole-jurisdiction rows (gold: "Wisconsin"/"United States")
-_ALIAS = {"wisconsin": "statewide", "statewide": "statewide",
-          "unitedstates": "national", "national": "national"}
+# canonical aliases for whole-jurisdiction rows (gold: "United States"); the state's
+# OWN name is state-dependent and handled by _state_alias below.
+_ALIAS = {"statewide": "statewide", "unitedstates": "national", "national": "national"}
 
 
 def _norm_name(x) -> str:
@@ -66,6 +80,33 @@ def _norm_name(x) -> str:
         out.pop()
     key = "".join(out)
     return _ALIAS.get(key, key)
+
+
+def _ref_keys(state: str) -> set[str]:
+    """The state geography reference's place names, normalized to match keys."""
+    return {k for k in (_norm_name(n) for n in R.geo_reference_names(state)) if k}
+
+
+def _state_alias(state: str, ref: set[str]) -> dict:
+    """Whole-jurisdiction rows: gold writes the state's own name ("Wisconsin",
+    "North Dakota") where the extraction writes "statewide". Map it -- UNLESS the
+    state's name is also one of its own counties (Iowa County, Iowa; Washington
+    County in many states), where the row is genuinely ambiguous and is left alone."""
+    nm = _norm_name(R.STATE_CODE_TO_NAME.get(state.upper(), ""))
+    return {nm: "statewide"} if nm and nm not in ref else {}
+
+
+def _repair(keys: pd.Series, ref: set[str]) -> tuple[pd.Series, dict]:
+    """Snap near-miss keys onto the reference vocabulary (2220b's rule). Returns the
+    repaired series and the {before: after} map, so every repair stays auditable."""
+    if not ref:
+        return keys, {}
+    fixes = {}
+    for k in sorted(set(keys) - {""}):
+        hit = R.resolve_geo_typo(k, ref)
+        if hit:
+            fixes[k] = hit
+    return keys.map(lambda k: fixes.get(k, k)), fixes
 
 
 def _norm_action(x) -> str:
@@ -99,20 +140,58 @@ def compare_fy(state: str, fy: int, gold: pd.DataFrame, json_root: pathlib.Path)
         out["note"] = "no extraction JSON" if ext.empty else "no gold rows"
         return out
 
-    g["_k"] = g["geographic_unit_name"].map(_norm_name)
-    ext["_k"] = ext["geographic_unit_name"].map(_norm_name)
-    g_units = set(g["_k"]) - {""}
-    e_units = set(ext["_k"]) - {""}
+    g["_raw"] = g["geographic_unit_name"].map(_norm_name)
+    ext["_raw"] = ext["geographic_unit_name"].map(_norm_name)
+
+    # Three matching bases, because the gold sheets carry their own transcription
+    # typos (WI 'Milwakuee'/'Richalnd'/'Waukeshaw', ND 'Kkidder'). Under exact
+    # matching those units can NEVER match a correctly-spelled extraction, so the
+    # geography reference -- whose whole point is canonical spelling -- would be
+    # scored down for being right. Each basis answers a different question:
+    #   exact          both sides raw. Comparable with pre-geo-context runs.
+    #   gold_repaired  gold typos snapped to the reference, extraction left raw.
+    #                  This is the TREATMENT channel: it rewards an extraction that
+    #                  spells names canonically and still penalizes one that does not.
+    #   canonical      both sides snapped. Spelling noise removed on both sides, so
+    #                  what is left is substantive (which units, what criterion/action).
+    ref = _ref_keys(state)
+    alias = _state_alias(state, ref)
+    if alias:
+        g["_raw"] = g["_raw"].map(lambda k: alias.get(k, k))
+        ext["_raw"] = ext["_raw"].map(lambda k: alias.get(k, k))
+    g["_rep"], gold_fixes = _repair(g["_raw"], ref)
+    ext["_rep"], ext_fixes = _repair(ext["_raw"], ref)
+    out["ref_names"] = len(ref)
+    out["gold_typo_fixes"] = gold_fixes
+    out["ext_typo_fixes"] = ext_fixes
+
+    bases = {
+        "exact":         ("_raw", "_raw"),
+        "gold_repaired": ("_rep", "_raw"),
+        "canonical":     ("_rep", "_rep"),
+    }
+    out["bases"] = {n: _basis_stats(g, ext, gk, ek) for n, (gk, ek) in bases.items()}
+    return out
+
+
+def _basis_stats(g: pd.DataFrame, ext: pd.DataFrame, gkey: str, ekey: str) -> dict:
+    """Name/action/criterion agreement for one choice of gold/extraction match key."""
+    g_units = set(g[gkey]) - {""}
+    e_units = set(ext[ekey]) - {""}
     matched = g_units & e_units
-    out["name_matched"] = len(matched)
-    out["gold_only"] = sorted(g_units - e_units)[:15]
-    out["ext_only"] = sorted(e_units - g_units)[:15]
+    res = {
+        "name_matched": len(matched),
+        "gold_n": len(g_units),
+        "ext_n": len(e_units),
+        "gold_only": sorted(g_units - e_units)[:15],
+        "ext_only": sorted(e_units - g_units)[:15],
+    }
 
     # among name-matched units: action agreement (all matched); criterion agreement
     # scored only where gold marks the unit APPROVED (gold leaves criterion blank on
     # denials, so a denied unit's ext 'other'/code is not a real disagreement).
-    gi = g.drop_duplicates("_k").set_index("_k")
-    ei = ext.drop_duplicates("_k").set_index("_k")
+    gi = g.drop_duplicates(gkey).set_index(gkey)
+    ei = ext.drop_duplicates(ekey).set_index(ekey)
     act_ok = 0
     crit_ok = crit_denom = 0
     disagree = []
@@ -134,11 +213,11 @@ def compare_fy(state: str, fy: int, gold: pd.DataFrame, json_root: pathlib.Path)
                 "gold_crit": gi.loc[k, "approval_criterion"], "ext_crit": ei.loc[k, "approval_criterion"],
                 "gold_act": ga, "ext_act": ea,
             })
-    out["act_agree"] = act_ok
-    out["crit_agree"] = crit_ok
-    out["crit_denom"] = crit_denom
-    out["disagreements"] = disagree[:20]
-    return out
+    res["act_agree"] = act_ok
+    res["crit_agree"] = crit_ok
+    res["crit_denom"] = crit_denom
+    res["disagreements"] = disagree[:20]
+    return res
 
 
 def main() -> None:
@@ -158,17 +237,29 @@ def main() -> None:
         if "note" in res:
             print(f"  {res['note']}  (gold_units={res['gold_units']}, ext_units={res['ext_units']})")
             continue
-        m = res["name_matched"]
-        print(f"  gold_units={res['gold_units']}  ext_units={res['ext_units']}  name_matched={m}")
-        if m:
-            cd = res["crit_denom"]
-            print(f"  action agreement: {res['act_agree']}/{m}   "
-                  f"criterion agreement (approved units): {res['crit_agree']}/{cd}")
-        if res["gold_only"]:
-            print(f"  in gold, not extracted (norm): {res['gold_only']}")
-        if res["ext_only"]:
-            print(f"  extracted, not in gold (norm): {res['ext_only']}")
-        for d in res["disagreements"]:
+        print(f"  gold_units={res['gold_units']}  ext_units={res['ext_units']}  "
+              f"(geo reference: {res['ref_names']} names)")
+        for label in ("exact", "gold_repaired", "canonical"):
+            b = res["bases"][label]
+            m = b["name_matched"]
+            line = f"  {label:<14} name {m}/{b['gold_n']}"
+            if m:
+                line += (f"   action {b['act_agree']}/{m}"
+                         f"   criterion {b['crit_agree']}/{b['crit_denom']}")
+            print(line)
+        for who, fx in (("gold", res["gold_typo_fixes"]), ("ext ", res["ext_typo_fixes"])):
+            if fx:
+                pairs = ", ".join(f"{a}->{b}" for a, b in sorted(fx.items()))
+                print(f"  typo repairs ({who.strip()}): {pairs}")
+
+        # detail is reported on the canonical basis: spelling is already reconciled
+        # there, so anything left is a real disagreement about content.
+        b = res["bases"]["canonical"]
+        if b["gold_only"]:
+            print(f"  in gold, not extracted (canon): {b['gold_only']}")
+        if b["ext_only"]:
+            print(f"  extracted, not in gold (canon): {b['ext_only']}")
+        for d in b["disagreements"]:
             print(f"    DIFF {d['unit']!r}: crit gold={d['gold_crit']} ext={d['ext_crit']} | "
                   f"act gold={d['gold_act']} ext={d['ext_act']}")
 
