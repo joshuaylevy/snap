@@ -7,8 +7,8 @@ status: complete
 phase: Phase 3
 tags: [abawd, fna, extraction, geo-context, evaluation, blinding, prompt-engineering, wi-gold]
 branch: master
-head_commit: 8a2dbe5
-commits: [0a890a2, 75f4a89, 8a2dbe5]
+head_commit: de73df7
+commits: [0a890a2, 75f4a89, 8a2dbe5, de73df7]
 transcript_path: /Users/joshuaylevy/.claude/projects/-Users-joshuaylevy-Documents-Work-USC-snap/07897f20-64ad-4328-86b7-248c0674d9ef.jsonl
 ---
 
