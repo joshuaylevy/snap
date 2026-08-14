@@ -35,8 +35,29 @@ SCHEMA_PATH = SCRIPTS_DIR / "2220c_schema.json"
 INSTRUCTION_PATH = SCRIPTS_DIR / "2220a_extraction_instruction.txt"
 PROMPT_PATH = SCRIPTS_DIR / "2220b_extraction_prompt.txt"
 
+# Hand-collected gold standards live at 1_data/<CODE>-hand-collected.xlsx, one per
+# state. They are added over time (WI/ND first, then DE/IA, ...), so resolve the path
+# from the state code rather than enumerating a fixed set — a new sheet becomes
+# scoreable by dropping the file in, with no code change.
 GOLD_WI = DATA_DIR / "WI-hand-collected.xlsx"
 GOLD_ND = DATA_DIR / "ND-hand-collected.xlsx"
+
+
+def gold_path(state_code: str) -> pathlib.Path:
+    """Path to a state's hand-collected gold xlsx (may not exist)."""
+    return DATA_DIR / f"{str(state_code).upper()}-hand-collected.xlsx"
+
+
+def gold_states() -> list[str]:
+    """State codes that currently have a gold sheet on disk, alphabetical.
+    Excel lock files (~$WI-hand-collected.xlsx, written while the sheet is open)
+    match the same glob, so filter to real two-letter codes."""
+    out = set()
+    for p in DATA_DIR.glob("*-hand-collected.xlsx"):
+        code = p.name.split("-", 1)[0].upper()
+        if code in STATE_CODE_TO_NAME:
+            out.add(code)
+    return sorted(out)
 
 MODEL_TAG = "claude-opus-4-8[1m]"   # in-harness extractor model; part of the run_id
 
@@ -195,11 +216,21 @@ def run_short(run_id: str) -> str:
 
 # --- work list ---------------------------------------------------------------------
 _FY_RE = re.compile(r"fy(\d{4})", re.IGNORECASE)
+# A few documents are named by the waiver PERIOD rather than the fiscal year, e.g.
+# 'nd-abawd-approval-10.2017-9.2018'. The federal FY is named for the year it ENDS in,
+# so a period ending 9/2018 is FY2018 -- take the trailing year. Without this the stub
+# gets a null fiscal_year, silently drops out of every --fys query, and the matching
+# gold rows report 'no extraction JSON' even though the document was extracted fine
+# (this hid 9 ND FY2018 gold units from the agreement report).
+_PERIOD_RE = re.compile(r"(\d{1,2})[.\-/](\d{4})\s*-\s*(\d{1,2})[.\-/](\d{4})")
 
 
 def _fy_from_name(name: str) -> Optional[int]:
     m = _FY_RE.search(name)
-    return int(m.group(1)) if m else None
+    if m:
+        return int(m.group(1))
+    p = _PERIOD_RE.search(name)
+    return int(p.group(4)) if p else None
 
 
 def _state_from_name(name: str) -> Optional[str]:
@@ -347,6 +378,12 @@ RULE_FAMILY = {
 EXTRA_COLUMNS = [
     "geographic_unit_orig_text",            # unit: verbatim printed string (v1_1)
     "qualifying_rule_family",               # derived from criterion_code
+    # v1_5: the coverage route the STATE declares instead of a waiver — currently only
+    # 7 CFR 273.24(g) discretionary exemptions ("15 percent", 12 percent from FY2020).
+    # Lives here rather than in GOLD_COLUMNS because the 46-col WI/ND contract predates
+    # it; ND gold carries a matching column appended at the end of its sheet, and 2225
+    # aligns the two by NAME, so the position difference is immaterial.
+    "state_alternative_coverage",           # group: exemptions declared in lieu of waiver
     # v1_2 bundle semantics: the level at which qualification was EVALUATED. groups[] is
     # the evaluated SET — a per_unit group holds one area, a joint_aggregate group holds
     # the whole constructed set — which is the convention the hand-collected sheets
@@ -455,7 +492,7 @@ def flatten_to_gold(obj: dict, fiscal_year=None) -> list[dict]:
         "non_conforming_reason": rl.get("non_conforming_reason"),
         "state_name": rl.get("state_name"),
         "state_code": rl.get("state_code"),
-        "notes": None,
+        "notes": rl.get("notes"),
         # v1_1 request-level flags (constant across this doc's rows)
         "possible_double_counting": rl.get("possible_double_counting"),
         "double_counting_note": rl.get("double_counting_note"),
@@ -490,6 +527,10 @@ def flatten_to_gold(obj: dict, fiscal_year=None) -> list[dict]:
                                          if isinstance(natl, dict) else None)),
             "group_action": action,
             "status": action,  # gold 'status' mirrors group_action
+            # v1_5: coverage the STATE declared instead of a waiver (273.24(g)
+            # discretionary exemptions). Paired with group_action='withdrawn_by_state';
+            # null on every ordinary approve/deny group.
+            "state_alternative_coverage": g.get("state_alternative_coverage"),
             "waiver_effective_date": g.get("waiver_effective_date"),
             "waiver_expiry_date": g.get("waiver_expiry_date"),
             "waiver_duration": g.get("waiver_duration_text"),

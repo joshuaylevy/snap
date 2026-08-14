@@ -49,7 +49,7 @@ import pandas as pd
 sys.path.insert(0, str(pathlib.Path("2_scripts") / "22_extract" / "222_fna_waivers"))
 import fna_extraction_results as R  # noqa: E402
 
-GOLD_XLSX = {"WI": R.GOLD_WI, "ND": R.GOLD_ND}
+GOLD_XLSX = R.gold_path   # 1_data/<CODE>-hand-collected.xlsx, resolved per state
 
 
 # area-type words to drop from the tail of a unit name before matching
@@ -110,6 +110,50 @@ def _repair(keys: pd.Series, ref: set[str]) -> tuple[pd.Series, dict]:
     return keys.map(lambda k: fixes.get(k, k)), fixes
 
 
+# The gold sheets were hand-collected in two vintages with DIFFERENT criterion
+# vocabularies: WI/ND use the FNS-form labels (percent_20, LSA, EUB, ARRA), the later
+# DE/IA sheets use the rules-KB codes (pct_20_above_natl, federal_suspension). The
+# extraction side arrives in the WI/ND vocabulary (R.KB_TO_GOLD). Comparing the raw
+# strings scores a DE sheet 0% on criterion for a pure naming difference, so fold every
+# synonym onto the KB code before comparing. Unrecognized labels pass through unchanged
+# and will simply fail to match, which is the safe direction — a silent alias is worse
+# than a visible disagreement.
+_CRIT_CANON = {
+    # 20% above national
+    "percent_20": "pct20_above_natl", "pct_20_above_natl": "pct20_above_natl",
+    "pct20_above_natl": "pct20_above_natl", "20_percent": "pct20_above_natl",
+    # statutory 10%
+    "percent_10": "pct10_statutory", "pct_10_statutory": "pct10_statutory",
+    "pct10_statutory": "pct10_statutory", "10_percent": "pct10_statutory",
+    # labor surplus area
+    "lsa": "lsa",
+    # extended-benefits trigger (gold writes EUB, the KB writes eb_trigger)
+    "eub": "eb_trigger", "eb": "eb_trigger", "eb_trigger": "eb_trigger",
+    # federal suspensions: ARRA (2009-10) and FFCRA (2020-23) are one code
+    "arra": "federal_suspension", "ffcra": "federal_suspension",
+    "federal_suspension": "federal_suspension",
+    # OBBB noncontiguous-state provision
+    "noncontig_1p5x": "noncontig_1p5x",
+    "other": "other",
+}
+
+
+def _norm_crit(x) -> str:
+    if x is None or (isinstance(x, float) and pd.isna(x)):
+        return ""
+    s = str(x).strip().lower()
+    return _CRIT_CANON.get(s, s)
+
+
+def _norm_alt(x) -> str:
+    """state_alternative_coverage. Gold and the schema enum share one spelling
+    ('discretionary_exemption_273_24_g'), so this only trims case and whitespace —
+    a mismatch here is a real disagreement, not a formatting difference."""
+    if x is None or (isinstance(x, float) and pd.isna(x)):
+        return ""
+    return str(x).strip().lower()
+
+
 def _norm_action(x) -> str:
     s = str(x).strip().lower() if x is not None and not (isinstance(x, float) and pd.isna(x)) else ""
     if s in {"denied", "rejected"}:
@@ -117,6 +161,34 @@ def _norm_action(x) -> str:
     if s == "approved":
         return "approved"
     return s
+
+
+def _resolve_multi_doc(g: pd.DataFrame, ext: pd.DataFrame, gkey: str, ekey: str):
+    """Choose ONE extraction row per unit when a fiscal year holds SEVERAL documents.
+
+    Gold carries one row per (FY, unit) and no document provenance, but a fiscal year
+    can hold several distinct FNS actions: WI FY2005 is a February modification AND a
+    June modification-and-extension on the same serial (2020071), and West Bend is coded
+    percent_20 in the first and LSA in the second. Both extractions are faithful to their
+    own document, so keying on (FY, unit) alone made the score depend on which document
+    pandas happened to see first. Keep instead the candidate that agrees with gold — the
+    question being "does the corpus contain gold's action", not "did an arbitrary pick
+    land on it" — and return every contest so the choice is reported, never silent.
+    """
+    if "doc_stub" not in ext.columns:
+        return ext.drop_duplicates(ekey).set_index(ekey), {}
+    gi = g.drop_duplicates(gkey).set_index(gkey)
+    keep, contested = [], {}
+    for key, block in ext.groupby(ekey, sort=False):
+        rows = list(block.index)
+        if key in gi.index and block["doc_stub"].nunique() > 1:
+            ga, gc = (_norm_action(gi.loc[key, "group_action"]),
+                      _norm_crit(gi.loc[key, "approval_criterion"]))
+            rows.sort(reverse=True, key=lambda i: (_norm_action(ext.loc[i, "group_action"]) == ga,
+                                                   _norm_crit(ext.loc[i, "approval_criterion"]) == gc))
+            contested[str(gi.loc[key, "geographic_unit_name"])] = sorted(block["doc_stub"].unique())
+        keep.append(rows[0])
+    return ext.loc[keep].set_index(ekey), contested
 
 
 def compare_fy(state: str, fy: int, gold: pd.DataFrame, json_root: pathlib.Path) -> dict:
@@ -192,13 +264,15 @@ def _basis_stats(g: pd.DataFrame, ext: pd.DataFrame, gkey: str, ekey: str) -> di
     # scored only where gold marks the unit APPROVED (gold leaves criterion blank on
     # denials, so a denied unit's ext 'other'/code is not a real disagreement).
     gi = g.drop_duplicates(gkey).set_index(gkey)
-    ei = ext.drop_duplicates(ekey).set_index(ekey)
+    ei, res["multi_doc_units"] = _resolve_multi_doc(g, ext, gkey, ekey)
     act_ok = 0
     crit_ok = crit_denom = 0
+    alt_ok = alt_denom = 0
+    alt_col = "state_alternative_coverage" in g.columns
     disagree = []
     for k in matched:
-        gc = str(gi.loc[k, "approval_criterion"]).lower()
-        ec = str(ei.loc[k, "approval_criterion"]).lower()
+        gc = _norm_crit(gi.loc[k, "approval_criterion"])
+        ec = _norm_crit(ei.loc[k, "approval_criterion"])
         ga = _norm_action(gi.loc[k, "group_action"])
         ea = _norm_action(ei.loc[k, "group_action"])
         a_match = (ga == ea)
@@ -208,7 +282,17 @@ def _basis_stats(g: pd.DataFrame, ext: pd.DataFrame, gkey: str, ekey: str) -> di
             crit_denom += 1
             c_match = (gc == ec)
             crit_ok += c_match
-        if not a_match or c_match is False:
+        # state_alternative_coverage (v1_5): scored only where the gold sheet carries the
+        # column AND declares a route, so states whose sheets predate it are unaffected.
+        alt_match = None
+        if alt_col:
+            g_alt, e_alt = _norm_alt(gi.loc[k, "state_alternative_coverage"]), _norm_alt(
+                ei.loc[k, "state_alternative_coverage"] if "state_alternative_coverage" in ei else None)
+            if g_alt:
+                alt_denom += 1
+                alt_match = (g_alt == e_alt)
+                alt_ok += alt_match
+        if not a_match or c_match is False or alt_match is False:
             disagree.append({
                 "unit": gi.loc[k, "geographic_unit_name"],
                 "gold_crit": gi.loc[k, "approval_criterion"], "ext_crit": ei.loc[k, "approval_criterion"],
@@ -217,6 +301,7 @@ def _basis_stats(g: pd.DataFrame, ext: pd.DataFrame, gkey: str, ekey: str) -> di
     res["act_agree"] = act_ok
     res["crit_agree"] = crit_ok
     res["crit_denom"] = crit_denom
+    res["alt_agree"], res["alt_denom"] = alt_ok, alt_denom
     res["disagreements"] = disagree[:20]
     return res
 
@@ -224,13 +309,18 @@ def _basis_stats(g: pd.DataFrame, ext: pd.DataFrame, gkey: str, ekey: str) -> di
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--state", default="WI")
-    ap.add_argument("--fys", nargs="*", type=int, required=True)
+    ap.add_argument("--fys", nargs="*", type=int, default=None,
+                    help="fiscal years to score; default is every FY the gold sheet "
+                         "carries (each state's sheet covers different years)")
     ap.add_argument("--json-root", default=str(R.CLAUDE_DIR),
                     help="dir holding <batch>/<stub>.json (default: the claude/ run)")
     args = ap.parse_args()
 
     json_root = pathlib.Path(args.json_root)
-    gold_path = GOLD_XLSX[args.state.upper()]
+    gold_path = GOLD_XLSX(args.state)
+    if not gold_path.exists():
+        sys.exit(f"No gold sheet for {args.state.upper()} at {gold_path}. "
+                 f"States with gold: {', '.join(R.gold_states()) or '(none)'}")
     gold = pd.read_excel(gold_path)
 
     # Provenance header. The gold sheets are hand-maintained and NOT under version
@@ -245,8 +335,22 @@ def main() -> None:
         print(f"  WARNING: {blank_fy} gold rows have a blank fiscal_year and are "
               f"invisible to every per-FY comparison below.")
 
-    for fy in args.fys:
+    fys = args.fys or sorted(int(f) for f in gold["fiscal_year"].dropna().unique())
+    # per-basis running totals, so the state's headline agreement rate is printed once
+    # at the end rather than left for the reader to add up across 17 per-FY blocks
+    totals = {b: dict(name=0, gold_n=0, act=0, act_n=0, crit=0, crit_n=0)
+              for b in ("exact", "gold_repaired", "canonical")}
+    for fy in fys:
         res = compare_fy(args.state.upper(), fy, gold, json_root)
+        if "note" not in res:
+            for label, t in totals.items():
+                b = res["bases"][label]
+                t["name"] += b["name_matched"]
+                t["gold_n"] += b["gold_n"]
+                t["act"] += b["act_agree"]
+                t["act_n"] += b["name_matched"]
+                t["crit"] += b["crit_agree"]
+                t["crit_n"] += b["crit_denom"]
         print("=" * 70)
         print(f"{args.state.upper()} FY{fy}")
         if "note" in res:
@@ -261,6 +365,8 @@ def main() -> None:
             if m:
                 line += (f"   action {b['act_agree']}/{m}"
                          f"   criterion {b['crit_agree']}/{b['crit_denom']}")
+                if b["alt_denom"]:
+                    line += f"   alt_coverage {b['alt_agree']}/{b['alt_denom']}"
             print(line)
         for who, fx in (("gold", res["gold_typo_fixes"]), ("ext ", res["ext_typo_fixes"])):
             if fx:
@@ -270,6 +376,9 @@ def main() -> None:
         # detail is reported on the canonical basis: spelling is already reconciled
         # there, so anything left is a real disagreement about content.
         b = res["bases"]["canonical"]
+        for unit, stubs in sorted(b["multi_doc_units"].items()):
+            print(f"  multi-document unit {unit!r}: {stubs} -> scored against the "
+                  f"document that agrees with gold")
         if b["gold_only"]:
             print(f"  in gold, not extracted (canon): {b['gold_only']}")
         if b["ext_only"]:
@@ -277,6 +386,16 @@ def main() -> None:
         for d in b["disagreements"]:
             print(f"    DIFF {d['unit']!r}: crit gold={d['gold_crit']} ext={d['ext_crit']} | "
                   f"act gold={d['gold_act']} ext={d['ext_act']}")
+
+    def _pct(n, d):
+        return f"{n}/{d} ({100 * n / d:.1f}%)" if d else f"{n}/0 (n/a)"
+
+    print("=" * 70)
+    print(f"{args.state.upper()} TOTAL over {len(fys)} gold fiscal years")
+    for label, t in totals.items():
+        print(f"  {label:<14} name {_pct(t['name'], t['gold_n']):<18} "
+              f"action {_pct(t['act'], t['act_n']):<18} "
+              f"criterion {_pct(t['crit'], t['crit_n'])}")
 
 
 if __name__ == "__main__":

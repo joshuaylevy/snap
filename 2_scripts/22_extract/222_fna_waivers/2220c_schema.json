@@ -229,6 +229,13 @@
             "null"
           ],
           "description": "The unit(s) involved and the groups they span. null unless possible_double_counting = true."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text observations about the request that belong to no group \u2014 most often an area the document mentions as eligible or designated that the state did NOT request. Do not create a group for such an area; record it here."
         }
       }
     },
@@ -258,11 +265,11 @@
               "properties": {
                 "orig_text": {
                   "type": "string",
-                  "description": "The unit EXACTLY as printed, including the trailing type word and any spelling/typo (e.g. 'Eau Claire city', 'Balance of Adams County', 'Bad River Reservation'). Ground-truth anchor for deterministic downstream parsing; never omit."
+                  "description": "The unit EXACTLY as printed, including the trailing type word and any spelling/typo (of the form '<Name> city', 'Balance of <Name> County', '<Name> Reservation'). Ground-truth anchor for deterministic downstream parsing; never omit."
                 },
                 "name": {
                   "type": "string",
-                  "description": "Core place name with the trailing type word removed (e.g. 'Eau Claire', 'Adams', 'Bad River'). Preserve original spelling, including apparent typos."
+                  "description": "Core place name with the trailing type word removed (the '<Name>' part). Preserve original spelling, including apparent typos, unless it is within a character or two of exactly one name in the state geography reference."
                 },
                 "area_type": {
                   "type": [
@@ -326,9 +333,21 @@
               "approved",
               "denied",
               "rejected",
+              "withdrawn_by_state",
               null
             ],
-            "description": "FNS action for this group. Use 'denied'/'rejected' as printed; both map to a not-approved outcome downstream."
+            "description": "FNS action for this group. Use 'denied'/'rejected' as printed; both map to a not-approved outcome downstream. 'withdrawn_by_state' = the area was not decided on the merits because the STATE dropped it from the request (typically declaring it will cover the area with 7 CFR 273.24(g) discretionary exemptions instead); see state_alternative_coverage."
+          },
+          "state_alternative_coverage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "discretionary_exemption_273_24_g",
+              null
+            ],
+            "description": "Coverage route the STATE declares it will use instead of a waiver for this group. 'discretionary_exemption_273_24_g' = the state's own rationed 15%/12% ABAWD-month exemption allotment under 7 CFR 273.24(g) \u2014 an individual-level state expenditure, NOT an FNS grant and NOT a qualifying criterion. null when the document declares no alternative."
           },
           "group_action_reason_citation": {
             "type": [
@@ -589,14 +608,14 @@
               "string",
               "null"
             ],
-            "description": "Why qualification_level was chosen: the verbatim text that decided it, or a one-line statement of the arithmetic performed (e.g. 'Cleveland 6.1 below the printed 6.3 threshold yet approved, so the set must be carrying it'). When qualification_level is 'unknown', state exactly what could not be determined. Required reading for the adjudicator; never leave blank on a judgment call."
+            "description": "Why qualification_level was chosen: the verbatim text that decided it, or a one-line statement of the arithmetic performed (of the form \"<area>'s printed rate is below the printed threshold yet it is approved, so the set must be carrying it\"). When qualification_level is 'unknown', state exactly what could not be determined. Required reading for the adjudicator; never leave blank on a judgment call."
           },
           "bundle_label": {
             "type": [
               "string",
               "null"
             ],
-            "description": "The document's own name for a joint_aggregate set ('70 County Group', 'Advantage West Sub-region 1', 'the Northeast region'). null for per_unit, statewide, or unnamed sets."
+            "description": "The document's own name for a joint_aggregate set \u2014 a compass region, an 'N-County Group', a numbered or branded sub-region. null for per_unit, statewide, or unnamed sets."
           }
         }
       }

@@ -84,13 +84,13 @@ WHAT THE RULE ITSELF SETTLES. For most criterion codes the answer follows from
 how the rule works, no matter how the sentence is phrased:
 
   lsa               DOL confers Labor Surplus Area status on an individual area.
-                    One area's designation cannot depend on another's. So "Ashe,
-                    Columbus, Edgecombe, Robeson, Rutherford, Scotland and Vance
-                    ... based on their designation as LSAs" states SEVEN
-                    independent facts, not one joint finding -> per_unit, seven
-                    groups. Note the document says only that they ARE LSAs; it
-                    never says each was designated separately, and it does not
-                    have to. You are expected to know how the rule works.
+                    One area's designation cannot depend on another's. So a
+                    sentence of the form "Counties A, B, C, D, E, F and G ... based
+                    on their designation as LSAs" states SEVEN independent facts,
+                    not one joint finding -> per_unit, seven groups. Note that such
+                    a sentence says only that the areas ARE LSAs; it never says
+                    each was designated separately, and it does not have to. You
+                    are expected to know how the rule works.
   pct10_statutory   The area's own unemployment rate. -> per_unit.
   eb_trigger        Qualification attaches to the whole state. -> statewide.
   federal_suspension  Nationwide, no area test. -> statewide.
@@ -109,8 +109,8 @@ result, saying nothing about how it was derived. Weigh the evidence:
      area rate against the printed threshold — whenever the document gives you
      both. It is the most reliable signal available and it does not depend on
      the document explaining itself.
-  2. STRONG: the document treats the set as an object — gives it a name ("the
-     Northeast region", "70 County Group", "seven multi-county areas"), prints a
+  2. STRONG: the document treats the set as an object — gives it a name (a
+     compass region, an "N-County Group", a numbered sub-region), prints a
      combined labor-force or unemployment total for it, or prints one rate for
      the set. A state that constructed and named a set was choosing a bundle.
   3. The document prints a rate for each area, every one clears the threshold,
@@ -136,6 +136,27 @@ their own. Do NOT split a named region into "would have qualified alone" and
 strong members are precisely what let it include the weak ones; splitting it
 destroys the choice the state actually made.
 
+A UNIT MAY CARRY TWO LABELS. A document will sometimes place a unit in a group
+under one rule and ALSO note — in an asterisk, footnote, or parenthetical — that
+the same unit independently satisfies a DIFFERENT rule. Code the rule of the group
+the state PLACED IT IN, and record the second label in criterion_other_explanation.
+Do not promote the footnote over the placement, and do not lift the unit out into a
+group of its own. A footnote often exists for an unrelated administrative reason
+(an LSA designation, for instance, is what earns a two-year rather than one-year
+approval), not to reclassify the area.
+
+  Decisive test — recompute the group's aggregate WITHOUT the unit. If the group
+  then fails its threshold, the unit is load-bearing where the state put it and
+  cannot be reassigned: the set qualifies BECAUSE that unit is in it. Typical
+  shape: a table lists ten counties as one sub-region with a single combined rate
+  that just clears the threshold, and an asterisk separately notes that three of
+  them are also designated Labor Surplus Areas. The ten stay ONE 20%-rule group;
+  the asterisk goes in criterion_other_explanation. Watch for documents that
+  contradict themselves — listing a unit inside the aggregate set in one sentence
+  and omitting it from a restatement of that set later. The arithmetic, not the
+  prose, settles it; say which sentence you followed in
+  qualification_level_evidence.
+
 ======================================================================
 SPLITTING RULE
 ======================================================================
@@ -149,9 +170,9 @@ together = six groups. For joint_aggregate, one group per constructed set; a
 document with seven named multi-county regions has seven groups. For statewide,
 one group.
 
-Still split on rule and action as before: WI FY2003 (serial 2020071) approves
-some counties as Labor Surplus Areas and others under the 20% rule, so those
-never share a group even though they share a serial.
+Still split on rule and action as before: for example, if a document approves some
+counties as Labor Surplus Areas and others under the 20% rule, those never share a
+group even though they share a serial.
 
 Do NOT create extra groups merely to hold a per-area unemployment rate — that
 belongs on the geographic unit itself (unemployment_rate / qualifying_basis).
@@ -163,16 +184,18 @@ constructed set AS a set does a denial become a single multi-area group.
 
 BOTH SHAPES ARE COMMON — expect to produce both, sometimes in one document, and
 do not let the group count alarm you:
-  - a document approving 16 Labor Surplus Area counties, 13 counties on their own
-    20%-rule rates, and denying 50 more is 79 groups of one area each;
-  - a document approving one 20-county bundle on the bundle's combined rate is
-    ONE group holding 20 areas.
+  - a document that approves some counties as Labor Surplus Areas, approves others
+    on their own 20%-rule rates, and denies several dozen more yields ONE GROUP PER
+    AREA — a group count in the high tens or low hundreds is possible and correct;
+  - a document that approves one multi-county bundle on the bundle's combined rate
+    is ONE group holding every area in the bundle.
 A high group count is the correct output for a per_unit document. Never merge
 areas into one group to keep the JSON short.
 
 Record how you decided: put the verbatim text, or a one-line statement of the
-arithmetic you did ("Cleveland 6.1 is below the 6.3 threshold yet approved"),
-into qualification_level_evidence. Put the document's own name for a joint set
+arithmetic you did (of the form "<area>'s printed rate is below the printed
+threshold yet it is approved, so the set must be carrying it"), into
+qualification_level_evidence. Put the document's own name for a joint set
 into bundle_label, else null.
 
 Set request_level.number_of_groups = len(groups).
@@ -211,11 +234,10 @@ Guidance:
   extract what it says and note the tension.
 
 ======================================================================
-FEDERAL SUSPENSION WINDOWS: how to code action and scope
+FEDERAL SUSPENSION WINDOWS: when the suspension IS the criterion
 ======================================================================
-During a nationwide statutory suspension the ABAWD time limit is not in force
-anywhere, so the state IS covered for that period no matter what it asked for
-or how FNS worded its reply. The authoritative windows (rules KB, 002_rules_machine):
+Two nationwide statutory suspensions put the ABAWD time limit out of force
+everywhere for a fixed period (rules KB, 002_rules_machine):
 
     ARRA    P.L. 111-5, sec 101(e)     2009-04-01  ->  2010-09-30
     FFCRA   P.L. 116-127, sec 2301     2020-04-01  ->  2023-06-30
@@ -224,12 +246,37 @@ or how FNS worded its reply. The authoritative windows (rules KB, 002_rules_mach
   CAA-2023 cutoff (emergency ALLOTMENTS ended after Feb 2023 under FFCRA sec 2302)
   — that is a different provision and does not end the ABAWD suspension.
 
-This is a general rule, not a fact about one fiscal year: it applies to ANY state
-and ANY document whose fiscal year overlaps either window (ARRA reaches FY2009 AND
-FY2010; FFCRA reaches FY2020 through FY2023).
+CODE THE DOCUMENT'S OWN BASIS, NOT THE CALENDAR. criterion_code records the rule
+THIS document invokes for THIS decision. Set it to federal_suspension ONLY when the
+document's disposition RESTS on the suspension — the letter gives ARRA/FFCRA as the
+reason coverage exists, or calls the request moot, superseded, or "no longer
+necessary" because the statute has already done the work.
 
-When a document's disposition rests on such a suspension (criterion_code =
-federal_suspension), code the group as:
+If the document rests its decision on some OTHER rule, code that other rule, even
+when the waiver period falls squarely inside a suspension window. A letter that
+approves a statewide waiver on a DOL Extended Benefits trigger notice is
+eb_trigger. That ABAWDs were ALSO covered by the suspension that year is true, but
+it is not what this document decided, and it is recoverable from the dates alone
+without reading anything — so it is not your job here and you lose nothing by
+leaving it out. Never reason "the period is inside the window, therefore
+federal_suspension," and never override a criterion the document states plainly.
+
+A RECITAL IS NOT A GROUP. Documents in and around these windows routinely recite a
+suspension as background and then rest the decision elsewhere — most often to
+explain that the suspension has EXPIRED and a new basis is now needed. The
+give-away shape is a concessive: "[the Act] allowed States to suspend time limits
+through [end of the window]. HOWEVER, the State may continue to suspend them
+through [a later date] BECAUSE [some other qualifying rule]." Read the
+"however/because" for what it is: the operative basis is the one after it.
+A recited statute gets NO group of its own. Emit only the group(s) the document
+actually acts on and keep the recital in criteria_summary_text.
+
+Anchor the window test on the WAIVER PERIOD, never on the date the letter was
+signed. A letter written in August 2010 covering October 2010 - September 2011 is
+outside the ARRA window entirely, however recent the suspension was when the author
+sat down to write.
+
+WHEN federal_suspension IS the right code, code the group as:
 
     group_action         "approved"        <- NOT null
     qualification_level  "statewide"
@@ -239,13 +286,13 @@ federal_suspension), code the group as:
 
 Two traps this exists to prevent:
 
-1. FNS letters in these windows routinely APPROVE AND DENY NOTHING — they say the
-   request is "no longer necessary", moot, or superseded, because the statute has
-   already done the work. Do not read that as absence of coverage and do not leave
-   group_action null. The operative fact is that the state's ABAWDs are time-limit
-   free for the window. Record "approved", and preserve FNS's actual wording
-   verbatim in action_reason_approval_denial and criteria_summary_text so the
-   "no longer necessary" character of the decision is not lost.
+1. FNS letters that APPROVE AND DENY NOTHING — they say the request is "no longer
+   necessary", moot, or superseded, because the statute has already done the work.
+   That IS a disposition resting on the suspension, so federal_suspension is right
+   here. Do not read it as absence of coverage and do not leave group_action null.
+   Record "approved", and preserve FNS's actual wording verbatim in
+   action_reason_approval_denial and criteria_summary_text so the "no longer
+   necessary" character of the decision is not lost.
 
 2. The suspension is nationwide, but DO NOT name the unit "United States" or set
    area_type "national". These records are assembled into a state-by-state panel;
@@ -258,17 +305,64 @@ second group: keep it in criteria_summary_text unless FNS took a distinct action
 on it.
 
 ======================================================================
+WITHDRAWN AREAS AND STATE-DECLARED ALTERNATIVE COVERAGE
+======================================================================
+Not every area named in a document was decided on the merits. A state sometimes
+tells FNS it is dropping an area from its request because it will cover that
+area's ABAWDs another way — most often by spending its own DISCRETIONARY
+EXEMPTIONS under 7 CFR 273.24(g) (the "15 percent" allotment, cut to 12 percent
+from FY2020 by the 2018 Farm Bill).
+
+Those exemptions are NOT a waiver and NOT a qualifying criterion. They are an
+individual-level, state-allocated, rationed budget denominated in ABAWD-months;
+FNS grants nothing and no area test is applied. Recording them as an approved
+waiver would erase the distinction between coverage FNS GRANTED and coverage the
+state BOUGHT out of its own limited budget — which is exactly the distinction the
+downstream panel is built to measure.
+
+When a document says the state is not pursuing, or is withdrawing, an area because
+it will use 273.24(g) exemptions there:
+
+    group_action                "withdrawn_by_state"   <- not approved, not denied
+    state_alternative_coverage  "discretionary_exemption_273_24_g"
+    criterion_code              the rule the area was ORIGINALLY requested under,
+                                if the document states it; else null. The exemption
+                                authority is never itself the criterion_code.
+
+Keep the sentence verbatim in criteria_summary_text.
+
+Trigger phrases: "15 percent exemption", "12 percent exemption", "discretionary
+exemption(s)", "7 CFR 273.24(g)", "exemption authority", "will exempt residents
+of X", "is not seeking a waiver for X".
+
+THREE THINGS THAT LOOK ALIKE AND ARE NOT:
+
+  a. FNS turned the area down on the merits
+        -> group_action "denied" (or "rejected" as printed)
+  b. The state withdrew it, or declared it would cover the area another way
+        -> group_action "withdrawn_by_state" (+ state_alternative_coverage)
+  c. The area was NEVER REQUESTED — the document merely observes that it would
+     have qualified, or that it holds a designation the state did not act on
+        -> emit NO group for it. Put the observation in request_level.notes.
+
+Case (c) is real and easy to miss: a letter may point out that a county was
+DOL-designated for the year and that the state did not ask for it. That is a fact
+about the state's CHOICE, not an FNS action on a group, and inventing a group for
+it would put a decision in the record that nobody made. Record it and move on.
+
+======================================================================
 GEOGRAPHIC UNITS: name / area_type / orig_text + BLS-LAUS classification
 ======================================================================
 For each geographic unit, emit three name fields and two classification flags.
 - orig_text: the unit EXACTLY as printed, including the trailing type word and any
-  spelling/typo (e.g. "Eau Claire city", "Balance of Adams County", "Bad River
+  spelling/typo (of the form "<Name> city", "Balance of <Name> County", "<Name>
   Reservation"). This is the ground-truth anchor; never omit it.
-- name: the core place name with the trailing type word removed ("Eau Claire",
-  "Adams", "Bad River"). Preserve the document's spelling UNLESS it is within a
-  character or two of exactly one name in the state geography reference file —
-  then use the reference spelling here (e.g. printed "Pasguotank" -> name
-  "Pasquotank"; the verbatim print stays in orig_text). Never force a match: if
+- name: the core place name with the trailing type word removed (the "<Name>" in
+  each of those). Preserve the document's spelling UNLESS it is within a character
+  or two of exactly one name in the state geography reference file — then use the
+  reference spelling here, and leave the verbatim print in orig_text. This is the
+  fix for OCR damage to an otherwise recognizable name (a scanned "u" read as "g",
+  an "l" as "1"). Never force a match: if
   nothing in the reference is close, keep the printed spelling. The reference
   is a starting point, not an exclusive list — an area's absence from it is not
   evidence of a transcription error.
