@@ -44,9 +44,9 @@ renv/**
 # null vs eb_trigger) -- so a prompt revision can only be scored against a FIXED
 # baseline. That premise still holds. Versioning is the wrong way to hold it:
 #
-#   1. It contradicts the blinding rule (75f4a89). Extraction subagents have full
+#   1. It contradicts the blinding rule (aa05d31). Extraction subagents have full
 #      repo access and must not read any other arm's output. A tracked JSON is
-#      reachable through `git show`/`git log -p` even after 8a2dbe5 wiped the
+#      reachable through `git show`/`git log -p` even after 05bebe2 wiped the
 #      working tree, so tracking re-opens the exact channel blinding closes.
 #   2. The baseline that has to be fixed is the (spec, model) pair, and that is
 #      already pinned by run_id = sha256(instruction + prompt + schema + model_tag),

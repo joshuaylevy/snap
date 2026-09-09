@@ -43,8 +43,8 @@ would relabel that arm's output (the driver refuses this; `--force` overrides).
 |---|---|---|---|---|
 | opus baseline | `1022_extractions/claude` | `5b2866b2` | `claude-opus-4-8[1m]` | pre-v1_2 |
 | replicate | `1022_extractions/claude_run2` | — | opus | pre-v1_2 |
-| **control** (no geo) | `1022_extractions/claude_v1_2_sonnet` | `01dc7c84` | `claude-sonnet-5` | v1_2, `998db7f` |
-| **treatment** (geo) | `1022_extractions/claude_v1_3_geo` | `904ee8fa` | `claude-sonnet-5` | v1_3, `4809aa1` |
+| **control** (no geo) | `1022_extractions/claude_v1_2_sonnet` | `01dc7c84` | `claude-sonnet-5` | v1_2, `19c392c` |
+| **treatment** (geo) | `1022_extractions/claude_v1_3_geo` | `904ee8fa` | `claude-sonnet-5` | v1_3, `5955922` |
 | **v1_4** (geo + blinding + fed-suspension) | `1022_extractions/claude_v1_4_fedsusp` | `3c73108d` | `claude-sonnet-5` | v1_4 |
 | **v1_5** (adjudications, below) | `1022_extractions/claude_v1_5_adjud` | `fe5d1b3c` | `claude-sonnet-5` | v1_5 |
 
@@ -65,7 +65,7 @@ finds the deletion commit, and `git show <commit>^:<path>` recovers any file. Th
 gitignored comparison CSVs and the ledger were NOT recoverable and are gone for good;
 the ledger rebuilds from `collate`. Gold `.xlsx` untouched.**
 
-Control vs treatment differ ONLY in the `4809aa1` prompt edit (contiguity checked
+Control vs treatment differ ONLY in the `5955922` prompt edit (contiguity checked
 against the adjacency lists; near-miss names resolved to the reference spelling), so
 holding `--model-tag claude-sonnet-5` fixed makes the geography reference the single
 moving part. Gold sheets now exist for **WI, ND, DE, IA, WV and WY** (DE/IA hand-collected
@@ -213,7 +213,7 @@ adjacency lists were used heavily by agents — verifying the Ashland–Bayfield
 Bay-Lake bundles, flagging Milwaukee–Washington as a corner-touch-only weak link, and
 falsifying FY2006-a's printed claim that Langlade and West Bend form a "contiguous
 sub-region" — but they *confirmed* bundles the control had already drawn the same way.
-The groups-semantics fix in `7a72b12` (shared by both arms) is what settled grouping;
+The groups-semantics fix in `19c392c` (shared by both arms) is what settled grouping;
 geography adds assurance, not different answers.
 
 **One genuine data fix the score cannot see:** FY2025 control emitted a denied group

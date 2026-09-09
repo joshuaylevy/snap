@@ -36,11 +36,11 @@ commit and recomputing the hash — not copied from a commit message.
 | — | *(pre-`8f234a6`)* | 2026-07 | `claude` | opus-4.8[1m] | `5b2866b2` † | first pilot |
 | — | *(pre-`8f234a6`)* | 2026-08-10 | `claude_run2` | opus-4.8[1m] | — † | replicate of the pilot |
 | v1_1 | `8f234a6` | 2026-07-23 | — | — | `e8729c5c` (opus-4.8) | spec first committed |
-| v1_2 | `7a72b12` | 2026-08-10 | `claude_v1_2_sonnet` | sonnet-5 | **`01dc7c84`** | `groups[]` = the evaluated set |
-| v1_3 | `4809aa1` | 2026-08-11 | `claude_v1_3_geo` | sonnet-5 | **`904ee8fa`** | geography reference |
-| v1_4 | `75f4a89` | 2026-08-12 | `claude_v1_4_fedsusp` | sonnet-5 | **`3c73108d`** | blinding + federal suspension |
-| v1_5 | `1e5c30f` | 2026-08-13 | `claude_v1_5_adjud` | sonnet-5 | **`fe5d1b3c`** | adjudications + answer-leak sweep |
-| v1_5 | `1e5c30f` | 2026-09-08 | `claude_v1_5_haiku` | haiku-4.5 | **`9959aa25`** | *(same spec, different model)* |
+| v1_2 | `19c392c` | 2026-08-10 | `claude_v1_2_sonnet` | sonnet-5 | **`01dc7c84`** | `groups[]` = the evaluated set |
+| v1_3 | `5955922` | 2026-08-11 | `claude_v1_3_geo` | sonnet-5 | **`904ee8fa`** | geography reference |
+| v1_4 | `aa05d31` | 2026-08-12 | `claude_v1_4_fedsusp` | sonnet-5 | **`3c73108d`** | blinding + federal suspension |
+| v1_5 | `0480916` | 2026-08-13 | `claude_v1_5_adjud` | sonnet-5 | **`fe5d1b3c`** | adjudications + answer-leak sweep |
+| v1_5 | `0480916` | 2026-09-08 | `claude_v1_5_haiku` | haiku-4.5 | **`9959aa25`** | *(same spec, different model)* |
 
 † **The pilot arms are not reproducible from git.** `8f234a6` is the commit that first
 *committed* the spec files; the `5b2866b2` baseline was run earlier, against a
@@ -50,9 +50,34 @@ cited as history but cannot be re-derived. Every arm from v1_2 on checks out exa
 
 **The working tree currently sits at the v1_5 spec** — recomputing from the files on
 disk reproduces `fe5d1b3c` (sonnet-5) exactly, so the spec has not drifted since
-`1e5c30f`.
+`0480916`.
 
 ---
+
+## A note on commit SHAs (history rewrite, 2026-09-09)
+
+Every SHA in this file is from the **rewritten** history. Before the repo's first
+public push, `git filter-repo` stripped all extraction JSONs
+(`1022_extractions/**/*.json`) from history, because gitignoring them going forward
+did not close the hole: 138 pre-v1_4 JSONs covering WI, ND and NC — the two gold
+states and the run-to-run stability state — remained recoverable with
+`git show <commit>^:<path>`, which is precisely the capability the blinding rule
+forbids an extraction subagent.
+
+Consequences, in case an old SHA turns up in a notebook or an external reference:
+
+- **Every commit SHA changed.** Pre-rewrite SHAs (`7a72b12`, `4809aa1`, `75f4a89`,
+  `1e5c30f`, …) no longer resolve. The full old→new mapping was written to
+  `.git/filter-repo/commit-map` at rewrite time; that path is local and not in the
+  repo, so the table above is the durable record.
+- **One commit disappeared.** `998db7f` ("feat(abawd): v1_2 prompt run over WI+ND+NC
+  (sonnet), 56/56 schema-valid") contained *only* extraction JSONs, so it became empty
+  and was pruned. It recorded a run, not a spec change; the v1_2 spec itself is
+  `19c392c`, and the run it described is the `01dc7c84` arm in the table above.
+- **`run_id`s are unaffected.** They hash spec file *contents*, not commits, and every
+  one in the table was re-verified against the rewritten history.
+
+A full pre-rewrite bundle was archived outside the repo at rewrite time.
 
 ## v1_1 — `8f234a6`, 2026-07-23 — the spec is committed
 
@@ -69,7 +94,7 @@ First version under version control. Establishes the shape everything since has 
   geography classification, data nonconformance, double-counting check.
 - `document_id` becomes `sha256(PDF content)`, retiring the path-hash contract.
 
-## v1_2 — `7a72b12`, 2026-08-10 — `groups[]` is the evaluated set
+## v1_2 — `19c392c`, 2026-08-10 — `groups[]` is the evaluated set
 
 **The problem.** The extractor emitted one group per `(rule, action)` pair, so NC
 FY2002's seven LSA counties — seven independent single-county claims that merely share
@@ -99,7 +124,7 @@ units in 79 singleton groups, ND FY2008 is 20 units in one group, WI FY2005 is 4
 in 19 groups sized 9/5/4/4/3/2. A docstring claiming gold used per-unit running
 counters was simply wrong and was fixed.
 
-## v1_3 — `4809aa1`, 2026-08-11 — the geography reference
+## v1_3 — `5955922`, 2026-08-11 — the geography reference
 
 Two minimal `2220b` edits pointing agents at `1_data/11_clean/111_geo_context/`:
 
@@ -125,7 +150,7 @@ identically. v1_2's groups-semantics fix, shared by both arms, is what settled g
 One real fix the score cannot see: the control emitted a FY2025 denied group with zero
 units, dropping a 13-ZCTA denial; the treatment carries it (19 → 20 units).
 
-## v1_4 — `75f4a89`, 2026-08-12 — blinding and federal suspension
+## v1_4 — `aa05d31`, 2026-08-12 — blinding and federal suspension
 
 **1. Blinding** (new section, placed first so it is read before anything else).
 
@@ -154,7 +179,7 @@ state-by-state panel.
 
 *This rule was substantially reversed four days later — see v1_5.*
 
-## v1_5 — `1e5c30f`, 2026-08-13 — adjudications and the answer-leak sweep
+## v1_5 — `0480916`, 2026-08-13 — adjudications and the answer-leak sweep
 
 ### Adjudications (Josh, after reading each source PDF)
 
@@ -199,7 +224,7 @@ contested unit**, so a rule that can only raise scores cannot do so silently.
 
 ## v1_5 under Haiku — `9959aa25`, 2026-09-08
 
-Not a spec change: `1e5c30f`'s spec under `claude-haiku-4-5-20251001`, verified by
+Not a spec change: `0480916`'s spec under `claude-haiku-4-5-20251001`, verified by
 recomputing the hash. Holds **AZ (31) + MA (13)**, 44/44 schema-valid, and is the only
 arm holding either state.
 

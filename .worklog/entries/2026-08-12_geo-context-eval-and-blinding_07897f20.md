@@ -7,8 +7,8 @@ status: complete
 phase: Phase 3
 tags: [abawd, fna, extraction, geo-context, evaluation, blinding, prompt-engineering, wi-gold]
 branch: master
-head_commit: de73df7
-commits: [0a890a2, 75f4a89, 8a2dbe5, de73df7]
+head_commit: 9378b53
+commits: [a94c606, aa05d31, 05bebe2, 9378b53]
 transcript_path: /Users/joshuaylevy/.claude/projects/-Users-joshuaylevy-Documents-Work-USC-snap/07897f20-64ad-4328-86b7-248c0674d9ef.jsonl
 ---
 
@@ -43,9 +43,9 @@ name-error class and (b) stabilizes group counts / bundling.
 4. Diffed **group composition** JSON-to-JSON between arms, because `2225` flattens
    `groups[]` away and therefore cannot score bundling — the channel adjacency
    actually drives.
-5. Wrote the result up in the protocol, committed the arm (`0a890a2`).
-6. On Josh's instruction, made two prompt changes (`75f4a89`, SPEC BUMP) and then
-   deleted every extraction arm from the working tree (`8a2dbe5`).
+5. Wrote the result up in the protocol, committed the arm (`a94c606`).
+6. On Josh's instruction, made two prompt changes (`aa05d31`, SPEC BUMP) and then
+   deleted every extraction arm from the working tree (`05bebe2`).
 7. Fast-forwarded `geo_context` → `fna_rebuild` → `master`.
 
 ## Key decisions & why
@@ -75,7 +75,7 @@ Ashland–Bayfield–Iron connects through Ashland, flagged Milwaukee–Washingt
 corner-touch-only (zero shared boundary) weak link carrying a whole bundle, and
 falsified FY2006-a's *printed claim* that Langlade + West Bend form a "contiguous
 sub-region". But every bundle they checked, the control had already drawn the same
-way. Conclusion: `7a72b12`'s groups-semantics fix (shared by both arms) is what
+way. Conclusion: `19c392c`'s groups-semantics fix (shared by both arms) is what
 settled grouping; the earlier group-count instability was a pre-v1_2 artifact.
 This matters for spend — do not expect a bundling win from geography on the rest
 of the corpus.
@@ -120,7 +120,7 @@ is an identical result with the pending rows preserved.
 ## Files changed
 
 - `1_data/10_raw/102_fna/1022_extractions/claude_v1_3_geo/**` — 20 WI treatment
-  extractions; added in `0a890a2`, deleted again in `8a2dbe5` (in history).
+  extractions; added in `a94c606`, deleted again in `05bebe2` (in history).
 - `2_scripts/22_extract/222_fna_waivers/2222_extract_claude_protocol.md` —
   mandatory BLINDING section; treatment-result table + bundling diff + the
   `layfayette`/`Sokagoan` trade; v1_4 arm row; deletion/recovery note.
@@ -138,7 +138,7 @@ is an identical result with the pending rows preserved.
   by hand arithmetic. Bundling claim verified by direct JSON-to-JSON group-
   composition diff, not inferred from counts. New `run_id` 3c73108d confirmed by
   running `worklist`. Post-deletion recovery spot-checked —
-  `git show 0a890a2:.../wi-abawd-response-fy2009.json` still parses. Gold `.xlsx`,
+  `git show a94c606:.../wi-abawd-response-fy2009.json` still parses. Gold `.xlsx`,
   53 geo-context files and all 1,134 source PDFs confirmed present after deletion.
 - **NOT verified:** the v1_4 prompt (`3c73108d`) has **never been run** — the
   federal-suspension and blinding text are untested against any document. ND was

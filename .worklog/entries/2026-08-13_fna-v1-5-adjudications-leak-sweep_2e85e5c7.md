@@ -7,8 +7,8 @@ status: complete
 phase: Phase 3
 tags: [abawd, fna, extraction, prompt-spec, gold-standard, blinding, validator]
 branch: master
-head_commit: 1e5c30f
-commits: [1e5c30f]
+head_commit: 0480916
+commits: [0480916]
 transcript_path: /Users/joshuaylevy/.claude/projects/-Users-joshuaylevy-Documents-Work-USC-snap/2e85e5c7-b3b6-4046-9c7b-8ccba50e1764.jsonl
 ---
 
@@ -38,7 +38,7 @@ action, 198/202 criterion; ND 145/145, 143/145, 142/145; DE 4/5, 4/4, 4/4; IA 7/
 7/7, 3/6.
 
 **2. NC run-to-run comparison.** NC has no gold. Restored the `01dc7c84` control arm
-from git history (`git archive 8a2dbe5^`) into job tmp, flattened both arms via
+from git history (`git archive 05bebe2^`) into job tmp, flattened both arms via
 `2223`, and compared: 288 rows each, **286/286 criterion, 286/286 action, group
 partition identical on 11/11 documents**. The only divergences are two v1_4
 improvements — control's OCR `Pasguotank`/`Perguimans` corrected to
@@ -203,7 +203,7 @@ trims case and whitespace only, so a mismatch is a real disagreement.
 - `.worklog/` — this entry + CSV row.
 
 **Not staged:** `1_data/10_raw/102_fna/1022_extractions/` remains untracked. Committing
-it would undo `8a2dbe5`, which deliberately wiped extraction outputs from the working
+it would undo `05bebe2`, which deliberately wiped extraction outputs from the working
 tree so future extraction agents cannot read a prior arm. Josh confirmed.
 
 ## Verification

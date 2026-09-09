@@ -7,8 +7,8 @@ status: wip
 phase: Phase 3
 tags: [abawd, fna, extraction, prompt-engineering, replication, schema, nc]
 branch: fna_rebuild
-head_commit: 7a72b12
-commits: [cce8239, 7a72b12]
+head_commit: 19c392c
+commits: [9624713, 19c392c]
 transcript_path: /Users/joshuaylevy/.claude/projects/-Users-joshuaylevy-Documents-Work-USC-snap/3ebc088a-9af6-49c0-8d91-4f494c430d98.jsonl
 ---
 
@@ -54,7 +54,7 @@ paper's weighted-set-packing analysis.
    downstream. Moved to the session scratchpad `quarantine/` rather than deleted;
    corpus restored to its manifest state of 1,136 files.
 
-5. **Checkpoint commit `cce8239`** — froze the WI+NC extraction JSONs as a baseline
+5. **Checkpoint commit `9624713`** — froze the WI+NC extraction JSONs as a baseline
    so subsequent prompt edits can be evaluated against a fixed reference.
 
 6. **The group-semantics fix (the substantive work).** Josh identified, from NC
@@ -113,13 +113,13 @@ paper's weighted-set-packing analysis.
 
 ## Files changed
 
-Committed in `cce8239`:
+Committed in `9624713`:
 - `.gitignore` — un-ignore `1022_extractions/**/*.json`; keep derived CSVs ignored.
 - `1_data/10_raw/102_fna/1022_extractions/claude/**` (31 JSONs) — run-1 baseline.
 - `1_data/10_raw/102_fna/1022_extractions/claude_run2/**` (31 JSONs) — WI + new NC run 2.
 - `.claude/settings.json`, `.worklog/**` — per the existing .gitignore intent.
 
-Committed in `7a72b12` (the v1_2 semantics change):
+Committed in `19c392c` (the v1_2 semantics change):
 - `2_scripts/22_extract/222_fna_waivers/2220b_extraction_prompt.txt` — replaced the
   splitting rule with the counterfactual test, rule-driven defaults, the arithmetic
   evidence test for pct20, joint-set scope rule, denied-area rule, and an explicit
@@ -157,7 +157,7 @@ Committed in `7a72b12` (the v1_2 semantics change):
 
 ## Open threads / next steps
 
-1. **Run the revised prompt against WI+NC and diff vs the `cce8239` baseline.** Watch
+1. **Run the revised prompt against WI+NC and diff vs the `9624713` baseline.** Watch
    NC FY2002 (expect 8 singleton groups), FY2004-a (expect 37), FY2006, FY2007
    (expect ~8 sub-region groups, not 15). Fresh session, per Josh.
 2. **Ledger cannot record replicate runs.** `run_id = hash(instruction+prompt+schema+
