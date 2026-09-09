@@ -286,7 +286,16 @@ _FY_RE = re.compile(r"fy(\d{4})", re.IGNORECASE)
 # gets a null fiscal_year, silently drops out of every --fys query, and the matching
 # gold rows report 'no extraction JSON' even though the document was extracted fine
 # (this hid 9 ND FY2018 gold units from the agreement report).
-_PERIOD_RE = re.compile(r"(\d{1,2})[.\-/](\d{4})\s*-\s*(\d{1,2})[.\-/](\d{4})")
+_PERIOD_RE = re.compile(r"(\d{1,2})[.\-/](\d{4})(?:\s|%20)*-(?:\s|%20)*(\d{1,2})[.\-/](\d{4})")
+# A third naming shape carries a BARE year and no 'fy' token at all, e.g.
+# 'mt-abawd-approval-2018', 'ct-abawd-approval-2018-revised', 'ny-abawd-approval-47-2018'.
+# 18 documents across 18 states are named this way -- every one an 'approval-2018' variant
+# in the FY2015-2019 batch -- and before this fallback every one of them carried a null
+# fiscal_year and vanished from --fys queries exactly as the ND period-named files did.
+# Take the LAST plausible year in the stub, so the trailing year still wins on the
+# '...-47-2018' / '...-2018-revised' shapes. Guarded to the corpus's own span so a serial
+# or a county count can never be mistaken for a year.
+_BARE_YEAR_RE = re.compile(r"(?<!\d)(199\d|20[0-2]\d)(?!\d)")
 
 
 def _fy_from_name(name: str) -> Optional[int]:
@@ -294,12 +303,21 @@ def _fy_from_name(name: str) -> Optional[int]:
     if m:
         return int(m.group(1))
     p = _PERIOD_RE.search(name)
-    return int(p.group(4)) if p else None
+    if p:
+        return int(p.group(4))
+    bare = _BARE_YEAR_RE.findall(name)
+    return int(bare[-1]) if bare else None
 
 
 def _state_from_name(name: str) -> Optional[str]:
-    """'wi-abawd-...' -> 'WI'; 'guam-abawd-...' -> 'GU'; 'nyc-abawd-...' -> 'NYC'."""
-    m = re.match(r"([a-z]{2,4})-abawd", name, re.IGNORECASE)
+    """'wi-abawd-...' -> 'WI'; 'guam-abawd-...' -> 'GU'; 'nyc-abawd-...' -> 'NYC'.
+
+    One file in the corpus (mi-response-abawd-fy2008.pdf) puts the doc class BEFORE
+    'abawd' instead of after it. Requiring '<code>-abawd' made that document invisible
+    to every worklist -- no state filter could ever select it, and nothing warned. The
+    optional middle token tolerates that ordering; the code still has to resolve against
+    STATE_CODE_TO_NAME, so a stray leading token cannot invent a state."""
+    m = re.match(r"([a-z]{2,4})-(?:[a-z]+-)?abawd", name, re.IGNORECASE)
     if not m:
         return None
     code = CODE_ALIASES.get(m.group(1).upper(), m.group(1).upper())

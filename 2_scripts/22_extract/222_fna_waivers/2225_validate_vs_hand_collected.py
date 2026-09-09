@@ -125,6 +125,7 @@ _CRIT_CANON = {
     # statutory 10%
     "percent_10": "pct10_statutory", "pct_10_statutory": "pct10_statutory",
     "pct10_statutory": "pct10_statutory", "10_percent": "pct10_statutory",
+    "percent_10_statutory": "pct10_statutory",   # WV sheet's spelling
     # labor surplus area
     "lsa": "lsa",
     # extended-benefits trigger (gold writes EUB, the KB writes eb_trigger)
