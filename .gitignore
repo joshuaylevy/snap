@@ -31,22 +31,69 @@ renv/**
 1_data/10_raw/102_fna/1020_timelimit_waiver_docs/**/*.doc
 1_data/10_raw/102_fna/1020_timelimit_waiver_docs/**/*.docx
 # FNA application ("State Requests and Data") zips + everything extracted from them.
-1_data/10_raw/102_fna/1023_application_docs/
-# FNA extraction outputs. Originally ignored as "regenerable", but the NC run-1 vs
-# run-2 replication (2026-08-10) showed agentic extraction is NOT deterministic:
-# independent runs of the same prompt/schema/model differ on transcription (Pasguotank
-# -> Pasquotank) and on judgment calls (FY2013 criterion null vs eb_trigger). Prompt
-# revisions can only be evaluated against a FIXED baseline, so the model JSONs are
-# versioned. The derived flat/comparison CSVs stay ignored -- those ARE deterministic
-# given the JSONs.
-!1_data/10_raw/102_fna/1022_extractions/**/*.json
+# Contents ignored, directory kept: 2123_download_fna_application_zips.py stages here.
+1_data/10_raw/102_fna/1023_application_docs/**
+!1_data/10_raw/102_fna/1023_application_docs/.gitkeep
+# FNA extraction outputs -- IGNORED, including the model JSONs.
+#
+# This reverses an earlier intent (never actually executed: no extraction JSON was
+# ever committed). The old comment argued the JSONs must be versioned because
+# agentic extraction is NOT deterministic -- the NC run-1 vs run-2 replication
+# (2026-08-10) showed independent runs of the same prompt/schema/model differing on
+# transcription (Pasguotank -> Pasquotank) and on judgment calls (FY2013 criterion
+# null vs eb_trigger) -- so a prompt revision can only be scored against a FIXED
+# baseline. That premise still holds. Versioning is the wrong way to hold it:
+#
+#   1. It contradicts the blinding rule (75f4a89). Extraction subagents have full
+#      repo access and must not read any other arm's output. A tracked JSON is
+#      reachable through `git show`/`git log -p` even after 8a2dbe5 wiped the
+#      working tree, so tracking re-opens the exact channel blinding closes.
+#   2. The baseline that has to be fixed is the (spec, model) pair, and that is
+#      already pinned by run_id = sha256(instruction + prompt + schema + model_tag),
+#      which IS versioned -- the spec files are. The ledger records which run_id
+#      produced which document. An arm is identified by its run_id, not by a blob.
+#   3. Arms are large and grow with the corpus (v1_5 is 20MB / 649 documents at 34
+#      states, with 16 states still to extract).
+#
+# The consequence, stated plainly: an arm's JSONs live ONLY in the working tree. A
+# deleted arm is gone -- re-running the same spec does not reproduce it. Treat an
+# arm directory as a lab notebook, not as a build artifact.
+1_data/10_raw/102_fna/1022_extractions/**/*.json
 1_data/10_raw/102_fna/1022_extractions/*.csv
 
 # GEO REFERENCE (state geography context build)
-# Raw Census/BLS reference pulls: regenerable via make geo_fetch.
-1_data/10_raw/103_geo/
+# Raw Census/BLS reference pulls + the pinned us-atlas topology: regenerable via
+# `make geo_fetch` and `make viz_fetch`. Contents ignored, directory kept.
+1_data/10_raw/103_geo/**
+!1_data/10_raw/103_geo/.gitkeep
 # Hand-curated county-change log: versioned source input (overrides blanket *.csv).
 !0_lit/01_geo/010_county_changes_1997_present.csv
+
+# PROGRESS TABLE (2226)
+# Hand-curated tier + geo-wart registry: versioned source input, NOT regenerable --
+# the tier assignments and the prose warts are judgments, not derived counts.
+# (Overrides the blanket *.csv ignore, same as the county-change log above.)
+!2_scripts/22_extract/222_fna_waivers/2226a_state_tier_registry.csv
+
+# PRESENTATION (built outputs)
+# 6_present holds BUILT pages, not sources -- the sources are 2_scripts/26_present.
+# The waiver map is 26MB per rebuild (14MB payload + a 12MB self-contained page) and
+# is fully reproducible with `make viz` from an extraction arm + the pinned topology,
+# so it is ignored; the shareable copy is the published Claude Artifact. Every builder
+# mkdirs its own output tree, so a clean checkout rebuilds without the directory
+# existing -- the .gitkeep is there to show a reader where the output lands.
+6_present/61_waiver_map/*.json
+6_present/61_waiver_map/*.html
+!6_present/61_waiver_map/.gitkeep
+# LaTeX build turds (beamer slides). The .tex + figs/ are the source and track;
+# the compiled .pdf tracks too, as 5_write's PDFs already do.
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.synctex.gz
 
 # SCRIPTS
 # Helper scripts and cache
