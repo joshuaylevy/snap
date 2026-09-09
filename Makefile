@@ -71,7 +71,7 @@ openai_abawd_waivers_subset:
 # openai_abawd_waivers pipeline above remains the working path in the meantime.
 # =====================================================================
 
-.PHONY: fna_recon fna_download fna_inventory fna_worklist fna_collate fna_status \
+.PHONY: fna_recon fna_download fna_app_zips fna_inventory fna_worklist fna_collate fna_status \
         fna_extract fna_panel fna_validate
 
 # FNA folder variables (numbered tree mirrors the target architecture)
@@ -91,6 +91,13 @@ fna_recon:
 # Optional subsetting: make fna_download FNA_ARGS="--batches 2015-2019"
 fna_download:
 	$(CONDA_ACTIVATE) && python $(212_FNA_TIMELIMIT)/2121_download_fna_waiver_docs.py $(FNA_ARGS)
+
+# Phase 2 -- the "State Requests and Data" zips: the STATE APPLICATIONS (requests),
+# unemployment spreadsheets, LSA lists and maps that sit alongside the FNS responses.
+# Deterministic, resumable, sha256-verified; extracts into a per-FY tree.
+# Optional subsetting: make fna_app_zips FNA_ARGS="--batches 2015-2019"
+fna_app_zips:
+	$(CONDA_ACTIVATE) && python $(212_FNA_TIMELIMIT)/2123_download_fna_application_zips.py $(FNA_ARGS)
 
 # Phase 2 -- content-hash document inventory (document_id = sha256(file content))
 fna_inventory:
