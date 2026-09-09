@@ -161,3 +161,27 @@ geo_fetch:
 # Optional subsetting: make geo_context GEO_ARGS="--states WI NC"
 geo_context:
 	$(CONDA_ACTIVATE) && python $(213_GEO)/2131_build_geo_context.py $(GEO_ARGS)
+
+# =====================================================================
+# WAIVER MAP -- interactive county choropleth of extracted applications
+# =====================================================================
+
+.PHONY: viz_fetch viz_data viz_html viz
+
+261_WAIVER_MAP := $(SCRIPTS)/26_present/261_waiver_map
+61_WAIVER_MAP := 6_present/61_waiver_map
+
+# Pinned us-atlas county topology (sha256-verified, idempotent).
+viz_fetch:
+	$(CONDA_ACTIVATE) && python $(261_WAIVER_MAP)/2610_download_us_atlas.py $(VIZ_ARGS)
+
+# Extraction arm + geography reference -> 610_waiver_map_data.json.
+# Optional: make viz_data VIZ_ARGS="--arm claude_run2"
+viz_data:
+	$(CONDA_ACTIVATE) && python $(261_WAIVER_MAP)/2611_build_viz_data.py $(VIZ_ARGS)
+
+# Inline data + topology + app into the one-file page (file:// ready, artifact ready).
+viz_html:
+	$(CONDA_ACTIVATE) && python $(261_WAIVER_MAP)/2612_assemble_artifact.py
+
+viz: viz_fetch viz_data viz_html

@@ -1,0 +1,97 @@
+<!-- Set-packing tab — prose aligned with the paper's §3 notation, plus the
+     interactive 6×6 demo scaffold. All demo logic lives in 2612h (own IIFE,
+     initialized lazily via the wm:pack-init CustomEvent). -->
+<div class="wm-packprose">
+  <h2>The state&rsquo;s problem is weighted set packing</h2>
+  <p class="wm-rlede">Under the 20% rule a state doesn&rsquo;t submit counties — it submits
+  <em>groups</em> of counties, and it chooses the groups. Formally, that choice is a weighted
+  set-packing problem.</p>
+  <p>Fix an application and a data window. Each county <math><mi>i</mi></math> has a
+  24-month labor force <math><msub><mi>L</mi><mi>i</mi></msub></math>, an unemployment count
+  <math><msub><mi>U</mi><mi>i</mi></msub></math>, and a value <math><msub><mi>V</mi><mi>i</mi></msub></math>
+  to the policymaker of getting it waived (its ABAWD caseload, say). With national rate
+  <math><mover accent="true"><mi>&alpha;</mi><mo>&#x2dc;</mo></mover></math>, the operative threshold is</p>
+  <div class="wm-formula"><math display="block">
+    <mi>&alpha;</mi><mo>=</mo><mi>min</mi><mo fence="true">{</mo><mn>1.2</mn><mo>&times;</mo><mover accent="true"><mi>&alpha;</mi><mo>&#x2dc;</mo></mover><mo separator="true">,</mo><mrow><mn>10</mn><mo lspace="0em" rspace="0em">%</mo></mrow><mo fence="true">}</mo>
+  </math></div>
+  <p>(the min is the paper&rsquo;s modeling of the statutory 10% rule as a cap — see the
+  <a href="#rules/criteria">rules tab</a> for the legal definition, which is looser). A group
+  <math><mi>g</mi></math> is <b>feasible</b> if it is geographically contiguous and its
+  <em>aggregate</em> rate clears the threshold:</p>
+  <div class="wm-formula"><math display="block">
+    <mfrac>
+      <mrow><munder><mo>&sum;</mo><mrow><mi>i</mi><mo>&isin;</mo><mi>g</mi></mrow></munder><msub><mi>U</mi><mi>i</mi></msub></mrow>
+      <mrow><munder><mo>&sum;</mo><mrow><mi>i</mi><mo>&isin;</mo><mi>g</mi></mrow></munder><msub><mi>L</mi><mi>i</mi></msub></mrow>
+    </mfrac>
+    <mo>&ge;</mo><mi>&alpha;</mi>
+    <mspace width="0.7em"></mspace><mo stretchy="false">&hArr;</mo><mspace width="0.7em"></mspace>
+    <munder><mo>&sum;</mo><mrow><mi>i</mi><mo>&isin;</mo><mi>g</mi></mrow></munder><msub><mi>s</mi><mi>i</mi></msub><mo>&ge;</mo><mn>0</mn><mo separator="true">,</mo>
+    <mspace width="0.8em"></mspace><mtext>where</mtext><mspace width="0.5em"></mspace>
+    <msub><mi>s</mi><mi>i</mi></msub><mo>=</mo><msub><mi>U</mi><mi>i</mi></msub><mo>&minus;</mo><mi>&alpha;</mi><msub><mi>L</mi><mi>i</mi></msub>
+  </math></div>
+  <p>The slack form is the useful one: each county contributes a fixed surplus or deficit
+  <math><msub><mi>s</mi><mi>i</mi></msub></math>, and a group works iff the surpluses cover the
+  deficits. A small county far above the threshold can carry a much larger neighbor sitting
+  just below it — which is exactly what states do (<a href="#rules/grouping">AR FY2008</a>).
+  The state&rsquo;s problem: choose <b>pairwise-disjoint</b>, contiguous, feasible groups to
+  maximize total covered value <math><munder><mo>&sum;</mo><mi>g</mi></munder><munder><mo>&sum;</mo><mrow><mi>i</mi><mo>&isin;</mo><mi>g</mi></mrow></munder><msub><mi>V</mi><mi>i</mi></msub></math>.
+  Choosing a maximum-weight collection of disjoint sets from a menu of admissible sets is
+  weighted set packing — NP-complete in general.</p>
+  <h3>A natural heuristic: greedy</h3>
+  <p>Enumerate the admissible groups, then repeatedly commit the highest-value group that is
+  disjoint from everything committed so far, until none remains. Greedy is fast and often
+  good, but it carries no optimality guarantee: an early greedy pick can consume a county
+  that two other groups each needed, stranding value a patient planner would have kept.
+  (The paper itself analyzes the packing problem directly rather than prescribing greedy —
+  the heuristic here is expository.) The demo below is rigged so you can beat it.</p>
+</div>
+
+<div class="wm-packdemo">
+  <h2>Build a waiver application</h2>
+  <p class="wm-packsub">A fake state: 36 counties with made-up labor forces, unemployment
+  counts, and ABAWD caseloads (the weight <math><mi>V</mi></math>). National rate 5.0%,
+  so the threshold is <b>6.0%</b>, compared after rounding the aggregate rate to one decimal
+  — the <a href="#rules/rounding">de facto convention</a>, which makes the effective cutoff
+  5.95%. Click squares to build a contiguous group, watch the aggregate rate, and commit it.
+  Squares tinted green qualify on their own (✓); the four big metro squares are valuable but
+  so far below the threshold that no feasible group can absorb them. At least one pocket in
+  the southeast only passes jointly. Or hand the board to the greedy algorithm and try to
+  beat its total.</p>
+  <div class="wm-pack">
+    <figure class="pk-mapwrap">
+      <svg id="pk-svg" viewBox="0 0 540 540" role="img" aria-label="6 by 6 demo county grid"></svg>
+    </figure>
+    <aside class="pk-panel" aria-label="Selection readout">
+      <h2 class="wm-eyebrow">Current selection</h2>
+      <div id="pk-stats">
+        <div class="pk-stat"><span>Squares</span><b id="pk-n">0</b></div>
+        <div class="pk-stat"><span>Labor force <math><mo>&sum;</mo><mi>L</mi></math></span><b id="pk-L">—</b></div>
+        <div class="pk-stat"><span>Unemployed <math><mo>&sum;</mo><mi>U</mi></math></span><b id="pk-U">—</b></div>
+        <div class="pk-stat"><span>Aggregate rate</span><b id="pk-exact">—</b></div>
+        <div class="pk-stat"><span>Rounded vs 6.0</span><b id="pk-round">—</b></div>
+        <div class="pk-stat"><span>Weight <math><mo>&sum;</mo><mi>V</mi></math></span><b id="pk-V">—</b></div>
+      </div>
+      <div class="pk-verdict" id="pk-verdict"></div>
+      <div class="pk-members" id="pk-members"></div>
+      <div class="pk-btns">
+        <button id="pk-commit" type="button" class="wm-btn" disabled>Commit group</button>
+        <button id="pk-clear" type="button" class="wm-btn" disabled>Clear</button>
+      </div>
+      <div class="pk-btns">
+        <button id="pk-step" type="button" class="wm-btn">Greedy: step</button>
+        <button id="pk-run" type="button" class="wm-btn">Greedy: run</button>
+        <button id="pk-undo" type="button" class="wm-btn" disabled>Undo commit</button>
+        <button id="pk-reset" type="button" class="wm-btn" disabled>Reset</button>
+      </div>
+      <div class="pk-score">
+        <div class="pk-stat"><span>Covered weight</span><b id="pk-covered">0</b></div>
+        <div class="pk-stat"><span>Greedy from scratch</span><b id="pk-greedy">—</b></div>
+        <div class="pk-stat"><span>Best possible (groups ≤ 6)</span><b id="pk-opt">896</b></div>
+      </div>
+      <div class="pk-log" id="pk-log"></div>
+      <p class="pk-note">The solver enumerates contiguous groups of up to 6 squares
+      (4,465 of them; 790 clear the threshold). Manual groups have no size cap — a bigger
+      feasible group is a legitimate way to beat the &ldquo;best possible&rdquo; number.</p>
+    </aside>
+  </div>
+</div>

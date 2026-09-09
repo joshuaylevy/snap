@@ -1,0 +1,323 @@
+<!-- Rules tab — long-form explainer. Content transcribed from the project rules KB
+     (0_lit/00_abawd_rules/001 + 000_sources), with UNVERIFIED markers carried
+     verbatim where the KB lacks a located primary source. Case-file callouts quote
+     episodes from the extraction corpus and deep-link into the map view. -->
+<div class="wm-rules">
+  <div class="wm-rprose">
+
+    <section id="wm-r-two-prongs">
+      <h2>Two ways into a waiver</h2>
+      <p class="wm-rlede">Since PRWORA (1996), a state can waive the SNAP ABAWD time limit
+      for an area that satisfies <em>one of two statutory prongs</em> (7 U.S.C. 2015(o)(4)(A)):
+      the area &ldquo;has an unemployment rate of over 10 percent,&rdquo; or it &ldquo;does not
+      have a sufficient number of jobs to provide employment for the individuals.&rdquo;</p>
+      <p>The first prong is a concrete numeric test. The second — <em>insufficient jobs</em> —
+      is an umbrella that FNS operationalized in guidance into concrete routes: the Labor
+      Surplus Area designation, the Extended Benefits trigger, a state-computed
+      &ldquo;20% above national&rdquo; test, and a set of softer criteria. The project labels
+      every waived area with one of the canonical criterion codes below; these are the same
+      codes and colors used on the map.</p>
+      <div class="wm-rtable"><table>
+        <thead><tr><th>Code</th><th>Criterion</th><th>Prong</th><th>Valid window</th></tr></thead>
+        <tbody>
+          <tr><td><span class="sw" data-rule="pct10_statutory"></span><span class="num">pct10_statutory</span></td>
+            <td>Area unemployment <b>over 10%</b> — a recent 12-month average, a recent 3-month average, or an historical seasonal rate</td>
+            <td>10% Rule</td><td class="num">1996 → present</td></tr>
+          <tr><td><span class="sw" data-rule="pct20_above_natl"></span><span class="num">pct20_above_natl</span></td>
+            <td>Area <b>24-month average ≥ 20% above</b> the national average over the same 24 months (state-computed from BLS LAUS; no floor, no ceiling)</td>
+            <td>Insufficient jobs</td><td class="num">2001 → 2025-07-04</td></tr>
+          <tr><td><span class="sw" data-rule="lsa"></span><span class="num">lsa</span></td>
+            <td>DOL/ETA <b>Labor Surplus Area</b> designation (20%-above core <b>with a 6% floor and a 10% auto-qualify ceiling</b>, over DOL &ldquo;civil jurisdictions&rdquo;)</td>
+            <td>Insufficient jobs</td><td class="num">1996 → 2025-07-04</td></tr>
+          <tr><td><span class="sw" data-rule="eb_trigger"></span><span class="num">eb_trigger</span></td>
+            <td>State triggers &ldquo;ON&rdquo; for <b>Extended Benefits</b> (IUR/TUR; EUC in-window) → automatic statewide waiver, up to 12 months</td>
+            <td>Insufficient jobs</td><td class="num">1996 → 2025-07-04</td></tr>
+          <tr><td><span class="sw" data-rule="federal_suspension"></span><span class="num">federal_suspension</span></td>
+            <td>Time limit <b>suspended nationwide</b> — no application needed</td>
+            <td>— (overrides all)</td><td class="num">ARRA 2009-04→2010-09; FFCRA 2020-04→2023-06</td></tr>
+          <tr><td><span class="sw" data-rule="other"></span><span class="num">other</span></td>
+            <td>Softer insufficient-jobs evidence: low/declining <b>employment-to-population ratio</b>, declining occupations or industries, an academic study</td>
+            <td>Insufficient jobs</td><td class="num">1996 → 2025-07-04</td></tr>
+          <tr><td><span class="num">noncontig_1p5x</span></td>
+            <td>Noncontiguous state (AK/HI) statewide rate <b>≥ 1.5× national</b> — post-dates the corpus, no map color</td>
+            <td>new prong (OBBB)</td><td class="num">2025-07-04 → present</td></tr>
+        </tbody>
+      </table></div>
+      <p>In 2025 the One Big Beautiful Bill struck the insufficient-jobs prong entirely: from
+      July 4, 2025 the surviving routes are the statutory 10% test (48 states + DC) and the
+      new noncontiguous-state test. Every insufficient-jobs code above shares that sunset.</p>
+      <p class="wm-src">Sources: PRWORA §824; 7 CFR 273.24(f); 66 FR 4437 (2001 final rule);
+      OBBB §10102, P.L. 119-21. Full citations in the project rules KB
+      (<span class="num">0_lit/00_abawd_rules</span>).</p>
+    </section>
+
+    <section id="wm-r-criteria">
+      <h2>The three thresholds people conflate</h2>
+      <p class="wm-rlede">Three different numeric objects circulate under names like
+      &ldquo;the 10% rule&rdquo; and &ldquo;the 20% rule.&rdquo; They are not the same test,
+      and the LSA formula&rsquo;s internal 10% is a <em>different</em> 10% from the statutory
+      rule.</p>
+      <h3><span class="sw" data-rule="pct10_statutory"></span> The 10% rule (statutory)</h3>
+      <p>A level test: the area&rsquo;s unemployment rate is <b>over 10%</b>. The regulation
+      (7 CFR 273.24(f)(2)(i)) accepts three evidentiary forms — a recent 12-month average, a
+      recent 3-month average, or an historical seasonal rate — so it is <em>not</em> a single
+      fixed-window statistic. Its practical edge is timing: an area with a 12-month average
+      over 10% is <b>self-certifiable</b>, meaning the state may begin operating the waiver at
+      submission rather than waiting for FNS approval.</p>
+      <h3><span class="sw" data-rule="pct20_above_natl"></span> The 20% rule (state-computed)</h3>
+      <p>The workhorse of the corpus: the area&rsquo;s <b>24-month average</b> unemployment
+      rate is <b>at least 20% above the national average</b> over the same 24 months —
+      equivalently, <math><mtext>area rate</mtext><mo>&ge;</mo><mn>1.2</mn><mo>&times;</mo><mtext>national rate</mtext></math>. Computed by the state from BLS LAUS
+      (not seasonally adjusted), compared against the BLS national series. It has <b>no floor
+      and no ceiling</b>: in a strong national labor market the operative cutoff can fall
+      well below 6%, and the map is full of areas waived at rates a casual reader would call
+      low.</p>
+      <p>Provenance note: the working paper dates this criterion to the August 2006 guidance;
+      the primary sources show it was <b>codified in the 2001 final rule</b> (66 FR 4437) and
+      merely restated in 2006. The KB carries this as a pending correction to the paper.</p>
+      <h3><span class="sw" data-rule="lsa"></span> Labor Surplus Area (DOL designation)</h3>
+      <p>An annual DOL/ETA designation, not an FNS computation. Its core is the same
+      20%-above-national idea — 20 CFR 654.5 designates areas whose two-calendar-year average
+      unemployment rate is <b>&ldquo;120 percent of the national average&hellip; or 10 percent
+      or higher,&rdquo;</b> but never below a <b>6.0% floor</b>. That internal 10% is an
+      auto-qualify <em>ceiling in the LSA formula</em>, not the statutory 10% rule. LSA also
+      runs over a different geography — DOL &ldquo;civil jurisdictions&rdquo; (cities ≥ 25k,
+      counties, balances of counties, New England towns) — so a unit can be an LSA without
+      passing the state-computed 20% test, and vice versa. For waiver purposes a current-FY
+      LSA area is &ldquo;readily approvable&rdquo; and self-certifiable.</p>
+      <h3><span class="sw" data-rule="eb_trigger"></span> Extended Benefits trigger</h3>
+      <p>When DOL determines a state qualifies for Extended Benefits (insured-unemployment or
+      total-unemployment-rate triggers &ldquo;ON&rdquo;; EUC eligibility in 2008–2013), FNS
+      grants an automatic <b>statewide</b> waiver of up to 12 months. In the paper&rsquo;s
+      model this is a bypass: no allocation problem is left for the state to solve.</p>
+      <h3><span class="sw" data-rule="federal_suspension"></span> Federal suspensions</h3>
+      <p>ARRA suspended the time limit nationwide from April 1, 2009 to September 30, 2010;
+      FFCRA did the same from April 1, 2020 to June 30, 2023. No application was needed.
+      (The end of pandemic <em>Emergency Allotments</em> in February 2023 is a different
+      provision — the ABAWD suspension ran to June 30, 2023.)</p>
+      <h3><span class="sw" data-rule="other"></span> Softer criteria</h3>
+      <p>The insufficient-jobs umbrella also admits qualitative evidence: a low and declining
+      employment-to-population ratio, declining occupations or industries, or an academic
+      study. The ETP route was eventually quantified (2021 guide): ETP at least 1 percentage
+      point below the national average <em>and</em> declining over a reference period of at
+      least 4 years, complemented by a 24-month unemployment rate at least 10% above national.
+      Few waivers in the corpus rest on these criteria alone.</p>
+      <h3>Regulatory timeline</h3>
+      <ul class="wm-tl">
+        <li><span class="num">1996</span><span>PRWORA creates the time limit and the two-prong waiver authority; first FNS guidance (Dec 1996): LSA, EB, &gt;10%, softer criteria — no standalone 20% test.</span></li>
+        <li><span class="num">2001</span><span>Final rule codifies 7 CFR 273.24(f), including the freestanding 20%-above-national criterion and the ETA-tied window rule.</span></li>
+        <li><span class="num">2006</span><span>FNS guidance restates the 20% test; mandates non-seasonally-adjusted BLS data; standardizes rounding and no-double-counting (memo never located — see below).</span></li>
+        <li><span class="num">2016</span><span>Guide adds the contiguity / economic-region clarification and the academic-study criterion.</span></li>
+        <li><span class="num">2019</span><span>Rule adds a 6% floor and restricts grouping — vacated in 2020, formally rescinded 2021; §273.24 reverts to the 2001 text.</span></li>
+        <li><span class="num">2021</span><span>September guide restates the reverted criteria (the version in force for the late corpus).</span></li>
+        <li><span class="num">2025</span><span>OBBB strikes the insufficient-jobs prong; only the 10% rule and the AK/HI 1.5× test survive.</span></li>
+      </ul>
+    </section>
+
+    <section id="wm-r-windows">
+      <h2>Which months of data may be used</h2>
+      <p class="wm-rlede">A 20%-rule application at date <math><mi>t</mi></math> does not
+      get to pick any 24 months it likes. The window menu is anchored to the DOL LSA
+      calendar.</p>
+      <blockquote>&ldquo;The 24-month period can begin no earlier than the period the
+      Department of Labor uses to calculate LSAs for the Federal fiscal year in which the
+      waiver is implemented&hellip; a waiver that would start in Fiscal Year 2021 could be
+      supported with a 24-month period beginning any time after (but not before)
+      January 1, 2018.&rdquo; <span class="wm-src">— FNS waiver guide, Sep 2021 (verbatim;
+      identical in the 2016 guide)</span></blockquote>
+      <p>Equivalently: for a waiver starting in fiscal year FY, the window may begin no
+      earlier than <b>January 1 of calendar year (FY − 3)</b>, and the state may use any
+      consecutive 24-month window on or after that January for which data exist. The
+      guides&rsquo; own lookup table:</p>
+      <div class="wm-rtable"><table>
+        <thead><tr><th>Waiver FY</th><th>Window may begin no earlier than</th></tr></thead>
+        <tbody>
+          <tr><td class="num">2021</td><td class="num">Jan 1, 2018</td></tr>
+          <tr><td class="num">2022</td><td class="num">Jan 1, 2019</td></tr>
+          <tr><td class="num">2023</td><td class="num">Jan 1, 2020</td></tr>
+          <tr><td class="num">2024</td><td class="num">Jan 1, 2021</td></tr>
+        </tbody>
+      </table></div>
+      <p>Two wrinkles worth knowing. First, the working paper glosses this rule as
+      &ldquo;January of two fiscal years prior,&rdquo; which read literally is about a year
+      more restrictive than the verbatim guide language; the KB treats the guide as
+      controlling (pending correction #2). Second, the 10% rule has its own <em>recency</em>
+      constraint rather than a window anchor: the 12- or 3-month average must be recent — for
+      a January 1, 2018 start, the furthest permissible 12-month look-back is
+      February 2016 – January 2017.</p>
+      <p>The anchor plus recency creates a real degree of freedom: by choosing a start date
+      in September (current FY) versus October (next FY), and by applying later as new BLS
+      months post, a state can expand its menu of admissible 24-month windows by roughly a
+      dozen. Each window carries its own national threshold, so window choice is itself part
+      of the optimization the <a href="#pack">set-packing tab</a> describes.</p>
+      <div class="wm-case">
+        <p class="wm-case-kicker">Case file · FL FY2004 <a href="#map/fl/2004/0">open in map →</a></p>
+        <p>Florida submitted, among others, a 24-month period of January 2000 – December 2001.
+        FNS ruled it could not be used because it began <em>earlier than the period ETA used
+        to designate LSAs</em> for the fiscal year — the window rule enforced against a state
+        in a real response letter.</p>
+      </div>
+    </section>
+
+    <section id="wm-r-vintages">
+      <h2>BLS vintages</h2>
+      <p class="wm-rlede">The unemployment rate an application cites is not a fixed fact —
+      it is a <em>vintage</em>: the estimate BLS published as of some date, later revised.</p>
+      <p>As general background (this paragraph is standard BLS practice, not a rule from the
+      project KB): LAUS county estimates are published monthly with a short lag — a
+      preliminary figure that is revised the following month — and then re-benchmarked in the
+      annual processing round each spring, which can revise several years of history at once.
+      The working paper&rsquo;s data section notes the practical corollary: a month-<span class="num">t</span>
+      release carries preliminary county figures for <span class="num">t−3</span> and revised
+      figures for <span class="num">t−4</span>, and the annual January-data release revises
+      many past years. So the rate a state saw when it applied can differ from the rate in
+      today&rsquo;s LAUS file — which is why the paper restricts to post-2011 application
+      years, the earliest for which BLS-archived vintages exist.</p>
+      <p><span class="wm-unverified">unverified — primary source not located</span>&ensp;
+      Which vintage a state may legally rely on at application date <span class="num">t</span>
+      is nowhere pinned down in the sources the project has retrieved: the KB records no
+      verified vintage-selection rule. What the corpus shows instead is FNS exercising
+      judgment case by case — 49 unit-rows in the extraction carry an explicit
+      older-vintage flag.</p>
+      <div class="wm-case">
+        <p class="wm-case-kicker">Case file · LA FY2003 <a href="#map/la/2003/0">open in map →</a></p>
+        <p>The state&rsquo;s own window (ending December 2002) came in at
+        <span class="num">6.04%</span> against a <span class="num">6.08%</span> threshold —
+        failing. FNS <em>substituted the earlier window</em> ending December 2001, where the
+        area&rsquo;s <span class="num">5.7%</span> cleared that window&rsquo;s
+        <span class="num">5.2%</span> threshold, and approved. Older data, used by FNS itself,
+        to reach an approval the newer data would not support.</p>
+      </div>
+      <div class="wm-case">
+        <p class="wm-case-kicker">Case file · WY FY2013 <a href="#map/wy/2013/0">open in map →</a></p>
+        <p>The refusal direction: FNS wrote that it &ldquo;does not consider data from Fiscal
+        Year (FY) 2010 to be recent enough&rdquo; to support the request.</p>
+      </div>
+      <div class="wm-case">
+        <p class="wm-case-kicker">Case file · WI FY2025 <a href="#map/wi/2025/0">open in map →</a></p>
+        <p>The state adjusted May 2022 – April 2024 BLS data using 2018–2022 ACS figures; FNS
+        rejected the adjustment — the data must be BLS or BLS-cooperating-agency data, not a
+        state&rsquo;s re-weighting of them.</p>
+      </div>
+    </section>
+
+    <section id="wm-r-rounding">
+      <h2>Rounding</h2>
+      <p class="wm-rlede"><span class="wm-unverified">unverified — primary source not located</span>&ensp;
+      The 2006 guidance reportedly standardized an aggregation-and-rounding procedure, but the
+      August 2006 memo has never been located, and the paper does not reproduce the rule. What
+      follows is the <em>de facto</em> convention inferred from the corpus — and the corpus
+      shows FNS applying it inconsistently.</p>
+      <p>The convention that fits most documents: compute the group&rsquo;s aggregate rate
+      (total unemployed over total labor force across the 24 months), <b>round both the area
+      rate and the 1.2×national threshold to one decimal place, then compare</b>. Because a
+      rounded 6.0 can stand for anything from 5.95, rounding is outcome-determinative at the
+      margin — and the margin is exactly where states aim (see the
+      <a href="#pack">set-packing tab</a>).</p>
+      <div class="wm-case">
+        <p class="wm-case-kicker">Case file · ND FY2006 <a href="#map/nd/2006/0">open in map →</a></p>
+        <p>The bundle as printed: <span class="wm-arith"><math displaystyle="true"><mfrac><mn>49,500</mn><mn>752,843</mn></mfrac><mo>=</mo><mn>6.58</mn><mo lspace="0em" rspace="0em">%</mo><mo stretchy="false">&rarr;</mo><mn>6.6</mn><mspace width="1em"></mspace><mtext>vs threshold</mtext><mspace width="0.45em"></mspace><mn>6.6</mn><mspace width="0.6em"></mspace><mtext>✓</mtext></math></span> Rounding to one decimal is what qualifies the group.
+        (Gold-scored document.)</p>
+      </div>
+      <div class="wm-case">
+        <p class="wm-case-kicker">Case file · LA FY2001 <a href="#map/la/2001/0">open in map →</a></p>
+        <p>A bundled packet denies three areas against a stated national figure of 5.28% —
+        which two later FNS documents in the same PDF establish was never the national rate
+        but the <em>threshold</em>, mislabelled. FNS recomputes the threshold to 5.24%, rounds
+        both sides to one decimal, and approves all three:
+        <span class="wm-arith"><math><mtext>Calcasieu (bal.)</mtext><mspace width="0.4em"></mspace><mn>5.2</mn><mspace width="0.45em"></mspace><mtext>vs</mtext><mspace width="0.45em"></mspace><mn>5.2</mn><mspace width="0.45em"></mspace><mtext>✓</mtext><mspace width="1.1em"></mspace><mtext>·</mtext><mspace width="1.1em"></mspace><mtext>Livingston</mtext><mspace width="0.4em"></mspace><mn>5.25</mn><mo stretchy="false">&rarr;</mo><mn>5.3</mn><mspace width="0.45em"></mspace><mtext>vs</mtext><mspace width="0.45em"></mspace><mn>5.2</mn><mspace width="0.45em"></mspace><mtext>✓</mtext></math></span>
+        A denial reversed purely by the rounding convention — under an unstated half-up rule.</p>
+      </div>
+      <div class="wm-case">
+        <p class="wm-case-kicker">Case file · NC FY2016 <a href="#map/nc/2016/0">open in map →</a></p>
+        <p>FNS states the national 24-month average as 6.8% and the 20%-above threshold as
+        8.1% — but <span class="wm-arith"><math><mn>6.8</mn><mo>&times;</mo><mn>1.2</mn><mo>=</mo><mn>8.16</mn><mtext>.</mtext></math></span> Both NC bundles come in at
+        8.05%, so both qualify <em>only because FNS truncated rather than rounded</em> the
+        threshold.</p>
+      </div>
+      <div class="wm-case">
+        <p class="wm-case-kicker">Case file · AL FY2000 <a href="#map/al/2000/0">open in map →</a></p>
+        <p>The refusal direction again: Dallas County prints at 9.95%; the state rounded to
+        &ldquo;10 percent&rdquo; for the statutory rule. FNS rejected the round-up — and noted
+        that the statute requires a rate <em>over</em> 10%, so a flat 10% would fail even if
+        the rounding stood.</p>
+      </div>
+      <p>Half-up in Louisiana, truncation in North Carolina, refusal-to-round in Alabama: the
+      convention is real enough to decide cases and loose enough that any replication has to
+      pick a rule and flag exact-equality cases. If the sign of the discrepancies holds up, a
+      systematically permissive rounding practice is a finding in its own right.</p>
+    </section>
+
+    <section id="wm-r-grouping">
+      <h2>Grouping areas</h2>
+      <p class="wm-rlede">States do not have to qualify areas one at a time — they may define
+      the areas. This is the rule that turns an application into a combinatorial problem.</p>
+      <blockquote>&ldquo;USDA will give States broad discretion in defining areas that best
+      reflect the labor market prospects of program participants and State administrative
+      needs&hellip; Accordingly, states should consider areas within, or combinations of,
+      counties, cities, and towns&hellip;&rdquo;
+      <span class="wm-src">— FNS guidance, Dec 1996</span></blockquote>
+      <p>Three operative rules, in the project&rsquo;s reading:</p>
+      <ul>
+        <li><b>A group qualifies on its aggregate.</b> The combined unemployed over the
+        combined labor force must clear the threshold; <em>individual members need not
+        qualify on their own</em>. A high-rate seed can carry lower-rate neighbors.</li>
+        <li><b>Contiguity (or an &ldquo;economic region&rdquo;).</b>
+        <span class="wm-unverified">unverified — primary source not located</span>&ensp;
+        The 2016 guide is credited with requiring groups to be geographically contiguous or
+        part of an economic region; the regulation itself only says states may define areas.
+        Empirically the corpus respects contiguity almost everywhere — with catches like a
+        &ldquo;four contiguous counties&rdquo; group in KY FY2016 that is disconnected as
+        drawn.</li>
+        <li><b>No double-counting</b> (2006 guidance, same unlocated memo): no unit may appear
+        in more than one waived group within an application — groups are disjoint.</li>
+      </ul>
+      <div class="wm-case">
+        <p class="wm-case-kicker">Case file · AR FY2008 <a href="#map/ar/2008/0">open in map →</a></p>
+        <p>The grouping choice made explicit on one page: 42 counties qualified individually,
+        each on its own rate — plus <b>31 more counties as a single joint bundle</b> in which
+        every member is below the threshold (own rates 3.7–5.4 against 5.5), carried entirely
+        by a combined 5.6. The state qualified everything it could individually, then bundled
+        the exact residual that could only pass jointly.</p>
+      </div>
+      <p>Disjoint groups, each feasible only in aggregate, chosen to maximize coverage —
+      that is a <b>weighted set-packing problem</b>, and it gets its own tab:
+      <a href="#pack">Set packing →</a></p>
+    </section>
+
+    <section id="wm-r-worked-example">
+      <h2>Worked example: one application, three criteria</h2>
+      <p class="wm-rlede">Tennessee&rsquo;s FY2005 application shows the whole toolkit in a
+      single FNS response: 22 groups — <b>12</b> under the
+      <span class="sw" data-rule="pct20_above_natl"></span> 20% rule, <b>9</b> under
+      <span class="sw" data-rule="lsa"></span> LSA designation, and <b>1</b> under the
+      <span class="sw" data-rule="pct10_statutory"></span> statutory 10% rule — mixing
+      areas that qualify on their own rates with joint bundles whose members only pass in
+      aggregate.</p>
+      <p>Read the table the way FNS read the application: the LSA rows ride on a DOL
+      designation (no rate arithmetic to check); the per-unit 20%-rule rows each clear the
+      threshold alone; the joint bundles are where the grouping rule earns its keep — several
+      counties none of which qualifies individually, packed so the aggregate lands at or just
+      above the cutoff. The single 10%-rule row is the statutory prong making a cameo where
+      one area&rsquo;s rate cleared 10% outright.</p>
+      <div id="wm-rules-example"><p class="wm-empty">Loading the document from the embedded
+      extraction payload&hellip;</p></div>
+      <p class="wm-src">Two companion examples: WV FY1999
+      (<a href="#map/wv/1999/0">open in map →</a>) mixes LSA and 10%-rule areas across 44
+      per-unit groups and is backed by the project&rsquo;s largest hand-collected gold sheet;
+      WI FY2003 (<a href="#map/wi/2003/0">open in map →</a>) is the archetypal LSA + 20%-rule
+      split, also gold-scored.</p>
+    </section>
+
+  </div>
+
+  <nav class="wm-toc" aria-label="Rules sections">
+    <a href="#rules/two-prongs">Two ways into a waiver</a>
+    <a href="#rules/criteria">The three thresholds</a>
+    <a href="#rules/windows">Data windows</a>
+    <a href="#rules/vintages">BLS vintages</a>
+    <a href="#rules/rounding">Rounding</a>
+    <a href="#rules/grouping">Grouping areas</a>
+    <a href="#rules/worked-example">Worked example</a>
+  </nav>
+</div>

@@ -1,0 +1,105 @@
+<meta charset="utf-8">
+<title>ABAWD Waiver Map</title>
+<style id="wmap-fonts">/*__FONTS__*/</style>
+<style id="wmap-styles">/*__CSS__*/</style>
+<div class="wmap">
+  <header class="wm-header">
+    <p class="wm-kicker">SNAP &middot; FNS FOIA corpus</p>
+    <h1>ABAWD waiver map</h1>
+    <p class="wm-sub">County-level SNAP ABAWD time-limit waiver requests and FNS actions — one state, fiscal year, and document at a time, colored by the qualifying criterion each area invoked.</p>
+    <p id="wm-scope" class="wm-scope"></p>
+  </header>
+
+  <nav id="wm-tabs" class="wm-tabs" role="tablist" aria-label="View">
+    <button id="wm-tab-map" type="button" class="wm-tab" role="tab" data-tab="map" aria-selected="true">Map</button>
+    <button id="wm-tab-rules" type="button" class="wm-tab" role="tab" data-tab="rules" aria-selected="false">The rules</button>
+    <button id="wm-tab-pack" type="button" class="wm-tab" role="tab" data-tab="pack" aria-selected="false">Set packing</button>
+  </nav>
+
+  <section id="wm-view-map" class="wm-view" role="tabpanel" aria-labelledby="wm-tab-map">
+  <div class="wm-controls">
+    <label>State
+      <span class="wm-selwrap"><select id="wm-state"></select></span>
+    </label>
+    <label>Fiscal year
+      <span class="wm-fywrap">
+        <button id="wm-fy-prev" type="button" class="wm-btn wm-step" aria-label="Previous fiscal year">&#8249;</button>
+        <span class="wm-selwrap"><select id="wm-fy"></select></span>
+        <button id="wm-fy-next" type="button" class="wm-btn wm-step" aria-label="Next fiscal year">&#8250;</button>
+      </span>
+    </label>
+    <div id="wm-docseg" class="wm-seg" role="group" aria-label="Document" hidden></div>
+  </div>
+
+  <h2 id="wm-viewtitle" class="wm-viewtitle"></h2>
+  <div class="wm-dochead">
+    <div class="wm-docmeta">
+      <span id="wm-doclabel" class="wm-doclabel"></span>
+      <span id="wm-doctype" class="wm-chip"></span>
+      <span id="wm-banner" class="wm-chip wm-banner" hidden></span>
+    </div>
+    <div class="wm-docbtns">
+      <span id="wm-pdf"></span>
+      <button id="wm-csv" type="button" class="wm-btn">Download CSV</button>
+    </div>
+  </div>
+  <div id="wm-request" class="wm-request"></div>
+
+  <div class="wm-main">
+    <div class="wm-left">
+      <figure class="wm-mapwrap">
+        <svg id="wm-svg" viewBox="0 0 960 600" role="img" aria-label="County-level waiver map">
+          <defs>
+            <pattern id="wm-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="5"></line>
+            </pattern>
+            <pattern id="wm-dots" width="6" height="6" patternUnits="userSpaceOnUse">
+              <circle cx="1.6" cy="1.6" r="1"></circle>
+            </pattern>
+            <pattern id="wm-cross" width="5" height="5" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="0" y2="5"></line>
+              <line x1="0" y1="0" x2="5" y2="0"></line>
+            </pattern>
+          </defs>
+          <g id="wm-counties"></g>
+          <g id="wm-overlays"></g>
+          <path id="wm-mesh" class="wm-mesh" vector-effect="non-scaling-stroke" d=""></path>
+          <path id="wm-outer" class="wm-outer" vector-effect="non-scaling-stroke" d=""></path>
+          <g id="wm-co"></g>
+          <path id="wm-bundle" class="wm-bundle" vector-effect="non-scaling-stroke" d=""></path>
+          <g id="wm-cities"></g>
+          <path id="wm-hov" class="wm-hov" vector-effect="non-scaling-stroke" d=""></path>
+        </svg>
+        <div id="wm-offmap" class="wm-offmap" hidden></div>
+      </figure>
+      <div id="wm-legend" class="wm-legend"></div>
+    </div>
+    <aside class="wm-panel" aria-label="Non-county areas">
+      <h2 class="wm-eyebrow">Non-county areas</h2>
+      <div id="wm-panelbody"></div>
+    </aside>
+  </div>
+
+  <div id="wm-note" class="wm-note" hidden>
+    <span class="wm-notelabel">Extraction notes</span>
+    <p id="wm-notetext"></p>
+  </div>
+
+  <footer id="wm-foot" class="wm-foot"></footer>
+  </section>
+
+  <section id="wm-view-rules" class="wm-view" role="tabpanel" aria-labelledby="wm-tab-rules" hidden>
+<!--__RULES_TAB__-->
+  </section>
+
+  <section id="wm-view-pack" class="wm-view" role="tabpanel" aria-labelledby="wm-tab-pack" hidden>
+<!--__PACK_TAB__-->
+  </section>
+</div>
+<div id="wm-tip" class="wm-tip" hidden></div>
+<div id="wm-toast" class="wm-toast" role="status" hidden></div>
+<script type="application/json" id="wmap-data">__DATA__</script>
+<script type="application/json" id="wmap-topology">__TOPOLOGY__</script>
+<script id="wmap-lib">/*__TOPOJSON_LIB__*/</script>
+<script id="wmap-pack">/*__PACK_APP__*/</script>
+<script id="wmap-app">/*__APP__*/</script>

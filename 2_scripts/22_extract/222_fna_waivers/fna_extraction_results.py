@@ -144,6 +144,70 @@ def geo_reference_names(state_code) -> set[str]:
     return {n for n in names if n}
 
 
+_FIPS5 = re.compile(r"^\d{5}$")
+
+
+def _geo_section_tables(state_code, section_prefixes: tuple[str, ...]) -> list[list[str]]:
+    """Cell rows of every markdown table under sections whose '## ' title starts with
+    any of section_prefixes (casefolded). Header and |---| separator rows are dropped."""
+    p = geo_context_path(state_code)
+    if p is None:
+        return []
+    rows: list[list[str]] = []
+    in_section = header_seen = False
+    for line in p.read_text(encoding="utf-8").splitlines():
+        if line.startswith("## "):
+            in_section = line[3:].strip().lower().startswith(section_prefixes)
+            header_seen = False
+            continue
+        s = line.strip()
+        if not in_section or not s.startswith("|"):
+            continue
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if all(set(c) <= set("-: ") for c in cells):     # separator row
+            continue
+        if not header_seen:                              # first non-separator row = header
+            header_seen = True
+            continue
+        rows.append(cells)
+    return rows
+
+
+# County-equivalent units live under three section titles: the standard one, and CT's
+# planning-region / legacy-county split (5-col and 3-col table shapes respectively).
+_GEO_UNIT_SECTIONS = ("counties / county-equivalents", "planning regions", "legacy counties")
+
+
+def geo_reference_table(state_code) -> list[dict]:
+    """County / county-equivalent rows of the state's geography reference, as dicts
+    {name, official_name, fips, valid_fy, note}. Includes dissolved units and legacy
+    layers (CT counties) — callers filter on valid_fy if they need one vintage.
+    Rows without a 5-digit FIPS cell (prose, malformed) are dropped."""
+    out = []
+    for cells in _geo_section_tables(state_code, _GEO_UNIT_SECTIONS):
+        if len(cells) >= 3 and _FIPS5.match(cells[2]):       # Name | Official | FIPS | ...
+            out.append({"name": cells[0], "official_name": cells[1], "fips": cells[2],
+                        "valid_fy": cells[3] if len(cells) > 3 else "",
+                        "note": cells[4] if len(cells) > 4 else ""})
+        elif len(cells) >= 2 and _FIPS5.match(cells[1]):     # Name | FIPS | Valid (CT legacy)
+            out.append({"name": cells[0], "official_name": cells[0], "fips": cells[1],
+                        "valid_fy": cells[2] if len(cells) > 2 else "", "note": ""})
+    return out
+
+
+def geo_city_parents(state_code) -> dict[str, list[str]]:
+    """LAUS-city -> parent county official names ('Appleton city' ->
+    ['Calumet County', 'Outagamie County']), from the cities table. Display spelling
+    with type words intact on both sides; callers normalize. New England states list
+    towns as grouped lists rather than a table and yield {} here."""
+    out: dict[str, list[str]] = {}
+    for cells in _geo_section_tables(state_code, ("cities with standard laus data",
+                                                  "cities and towns with standard laus data")):
+        if len(cells) >= 2 and cells[0]:
+            out[cells[0]] = [c.strip() for c in cells[1].split(",") if c.strip()]
+    return out
+
+
 def _levenshtein(a: str, b: str) -> int:
     """Plain DP edit distance. Inputs here are short normalized place keys."""
     if a == b:
