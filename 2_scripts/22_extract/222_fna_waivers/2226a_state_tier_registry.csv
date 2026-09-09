@@ -1,0 +1,54 @@
+state_code,state_name,tier,tier_order,unit_basis,unit_noun,geo_wart
+ND,North Dakota,P,-1.0,county,,"pilot + gold sheet; standard counties, {resv} reservations"
+WI,Wisconsin,P,-1.0,county,,"pilot + gold sheet; {resv} reservations, Menominee county/reservation coextensive"
+DE,Delaware,0,0.0,county,,"smallest real state — {units} counties, {docs} docs"
+IA,Iowa,0,0.0,county,,only {docs} docs but {units} counties — cheap long-unit-list stress test
+AR,Arkansas,1,1.0,county,,cleanest in tier — {resv} reservations
+KS,Kansas,1,1.0,county,,"clean counties, no material warts"
+MS,Mississippi,1,1.0,county,,"{resv} reservation, otherwise clean counties"
+NE,Nebraska,1,1.0,county,,"clean counties, no material warts"
+SC,South Carolina,1,1.0,county,,nothing material; {laus} LAUS cities but county-level requests
+WV,West Virginia,1,1.0,county,,"{resv} reservations, only {laus} LAUS cities; {scanned}/{docs} image-only"
+WY,Wyoming,1,1.0,county,,{units} counties + Wind River reservation
+AL,Alabama,2,2.0,county,,standard counties but {scanned}/{docs} docs image-only
+GA,Georgia,2,2.0,county,,"{units} counties, long lists; multi-group bundling within a year"
+IN,Indiana,2,2.0,county,,standard counties; {laus} LAUS cities
+KY,Kentucky,2,2.0,county,,"cleanest in tier — {resv} reservations, no county churn, FY{fy_min}–{fy_max}"
+LA,Louisiana,2,2.0,county,parishes,"parishes not counties; statewide-dominant, half the docs bare EB-trigger"
+MO,Missouri,2,2.0,county,,{units} counties incl. St. Louis independent city
+NC,North Carolina,2,2.0,county,,run-to-run stability state (no gold); FNA record stops at FY2016
+TN,Tennessee,2,2.0,county,,"{scanned}/{docs} docs image-only — OCR cost, not geography"
+UT,Utah,2,2.0,county,,{laus} LAUS cities against only {units} counties
+ID,Idaho,2.5,2.5,county,,{resv}-reservation block named as waiver areas; record ends FY{fy_max}
+MT,Montana,2.5,2.5,county,,{resv}-reservation block; Yellowstone NP county dissolved 1997 ({legacy} legacy)
+SD,South Dakota,2.5,2.5,county,,{resv}-reservation block; Shannon→Oglala Lakota 2015 ({legacy} legacy)
+AK,Alaska,3,3.0,county,boroughs/census areas,{resv} ANVSAs + renamed boroughs/census areas ({legacy} legacy)
+AZ,Arizona,3,3.0,county,,{resv} reservations against {units} counties
+CA,California,3,3.0,county,,{laus} LAUS cities and {resv} reservations against {units} counties
+CO,Colorado,3,3.0,county,,sub-county city-part waiver areas; Broomfield created 2001
+CT,Connecticut,3,3.0,town,,town-level ({towns} towns); counties→planning regions 2022 ({legacy} legacy)
+FL,Florida,3,3.0,county,,{laus} LAUS cities against {units} counties
+HI,Hawaii,3,3.0,county,,{resv} Hawaiian home lands against {units} counties
+IL,Illinois,3,3.0,county,,{laus} LAUS cities exceed {units} counties
+MA,Massachusetts,3,3.0,town,,"town-level units — {towns} towns, {units} counties"
+MD,Maryland,3,3.0,county,,{units} units = 23 counties + Baltimore independent city
+ME,Maine,3,3.0,town,,"town-level units — {towns} towns, the largest list in the corpus"
+MI,Michigan,3,3.0,county,,{laus} LAUS cities exceed {units} counties
+MN,Minnesota,3,3.0,county,,reservations built from county fragments ({resv} areas)
+NH,New Hampshire,3,3.0,town,,"town-level units — {towns} towns, {units} counties"
+NJ,New Jersey,3,3.0,county,,{laus} LAUS cities against {units} counties
+NM,New Mexico,3,3.0,county,,{resv} reservations against {units} counties
+NV,Nevada,3,3.0,county,,{resv} reservations against {units} counties
+NY,New York,3,3.0,county,,{laus} LAUS cities; NYC filed separately
+OH,Ohio,3,3.0,county,,{laus} LAUS cities against {units} counties
+OK,Oklahoma,3,3.0,county,,{resv} tribal statistical areas post-*McGirt* vs {units} counties
+OR,Oregon,3,3.0,county,,{resv} reservations + {laus} LAUS cities against {units} counties
+PA,Pennsylvania,3,3.0,county,,{laus} LAUS cities against {units} counties
+RI,Rhode Island,3,3.0,town,,"town-level units — {towns} towns, {units} counties"
+TX,Texas,3,3.0,county,,{units} counties plus {laus} LAUS cities — largest county list
+VA,Virginia,3,3.0,county,,{units} units = 95 counties + 38 independent cities
+VT,Vermont,3,3.0,town,,"town-level units — {towns} towns, {units} counties"
+WA,Washington,3,3.0,county,,"{resv} reservations, {laus} LAUS cities; 38/39 counties every year"
+DC,District of Columbia,X,9.0,county,district,single district-wide unit — exercises no grouping logic
+GU,Guam,X,9.0,county,territory,single territory-wide unit — exercises no grouping logic
+VI,U.S. Virgin Islands,X,9.0,county,islands,{units} island units — exercises no grouping logic
